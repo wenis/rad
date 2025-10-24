@@ -32,7 +32,7 @@ This is a Claude Code configuration. To use it:
 2. Clone this repository into your project as `.claude`:
    ```bash
    cd your-project
-   git clone https://github.com/yourusername/rad .claude
+   git clone https://github.com/wenis/rad .claude
    ```
 
 ### Step 2: Initialize Your Project (First Time Only)
