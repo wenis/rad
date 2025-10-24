@@ -1,0 +1,38 @@
+# Operating System Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+*~
+
+# IDE and Editor Files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+
+# Temporary Files
+*.tmp
+*.temp
+*.log
+*.cache
+
+# Don't ignore .claude directory (this IS the RAD system)
+!.claude/
+
+# User-specific project files created by /init-project
+# These should be in the user's project repo, not the RAD system repo
+# (Uncomment these if you're using RAD in a project)
+# docs/SYSTEM.md
+# docs/CONVENTIONS.md
+# docs/specs/
+# docs/validation/
+# docs/deployment/
+# docs/feedback/
