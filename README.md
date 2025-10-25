@@ -29,10 +29,17 @@ A complete **Claude Code workflow system** that turns feature ideas into product
 This is a Claude Code configuration. To use it:
 
 1. Install [Claude Code](https://claude.com/claude-code)
-2. Clone this repository into your project as `.claude`:
+2. In your project directory, create a `.claude` directory and clone this repository into it:
    ```bash
    cd your-project
-   git clone https://github.com/wenis/rad .claude
+   mkdir .claude
+   cd .claude
+   git clone https://github.com/wenis/rad .
+   ```
+
+   Or as a one-liner:
+   ```bash
+   cd your-project && git clone https://github.com/wenis/rad .claude
    ```
 
 ### Step 2: Initialize Your Project (First Time Only)
@@ -218,7 +225,7 @@ This system balances **speed** (rapid iteration) with **quality** (enterprise re
 - Low-risk → Direct to production
 - Experimental → Canary deployment
 
-See `.claude/PHILOSOPHY.md` for full details.
+See `PHILOSOPHY.md` for full details.
 
 ## The Feedback Loop
 
@@ -242,7 +249,7 @@ Deploy!
 
 **Max 3 iterations** - if still failing, escalate to user for guidance.
 
-See `.claude/LOOP-MECHANISM.md` for full details.
+See `LOOP-MECHANISM.md` for full details.
 
 ## Example: Full Feature Development
 
@@ -318,12 +325,11 @@ Result: Fully deployed, tested, monitored feature
 
 ## Documentation
 
-- **[.claude/README.md](.claude/README.md)** - Complete workflow documentation
-- **[.claude/PHILOSOPHY.md](.claude/PHILOSOPHY.md)** - Opinionated workflow philosophy
-- **[.claude/LOOP-MECHANISM.md](.claude/LOOP-MECHANISM.md)** - Builder-validator feedback loop details
-- **[.claude/agents/](.claude/agents/)** - Agent prompts (planner, builder, validator, shipper)
-- **[.claude/skills/](.claude/skills/)** - 24 specialized skill prompts
-- **[.claude/commands/](.claude/commands/)** - Slash command definitions
+- **[PHILOSOPHY.md](PHILOSOPHY.md)** - Opinionated workflow philosophy
+- **[LOOP-MECHANISM.md](LOOP-MECHANISM.md)** - Builder-validator feedback loop details
+- **[agents/](agents/)** - Agent prompts (planner, builder, validator, shipper)
+- **[skills/](skills/)** - 24 specialized skill prompts
+- **[commands/](commands/)** - Slash command definitions
 
 ## Contributing
 
@@ -360,4 +366,4 @@ Built with ❤️ using [Claude Code](https://claude.com/claude-code)
 
 **Remember:** We choose both speed AND reliability. Be strict about outcomes, flexible about methods.
 
-**Questions?** Open an issue or read the [detailed documentation](.claude/README.md).
+**Questions?** Open an issue or start with `/init-project` to get going.

@@ -51,8 +51,13 @@ ln -s ../rad .claude
 ## Repository Structure
 
 ```
-.claude/              # The RAD system (agents, skills, commands)
+agents/               # Workflow agents (planner, builder, validator, shipper)
+skills/               # 24 specialized capabilities
+commands/             # Slash commands (init-project, rapid-dev, etc.)
+templates/            # Templates for generated docs
 docs/                 # Documentation templates and examples
+PHILOSOPHY.md         # Workflow philosophy
+LOOP-MECHANISM.md     # Builder-validator feedback loop details
 README.md             # Main documentation
 CONTRIBUTING.md       # Contribution guidelines
 LICENSE               # MIT License
