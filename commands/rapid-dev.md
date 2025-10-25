@@ -44,25 +44,60 @@ The builder-validator feedback loop runs automatically (max 3 iterations).
 
 ### Phase 2: Implementation
 
-4. Invoke the **builder** agent to:
-   - Read the spec created by planner
-   - Implement the feature following the spec
-   - Write clean, modular code
-   - Run basic smoke tests
-   - Document the implementation
+4. **Detect build strategy from spec:**
+   - Read the spec at `docs/specs/[feature-name].md`
+   - Look for "Execution Strategy" or "Build Plan" section
+   - Check if it says "Sequential" or "Parallel: N modules in M phases"
 
-5. Review the code with user if needed
+5. **Invoke the builder agent with explicit mode instruction:**
+
+   **IF spec says "Sequential: Single builder":**
+   ```
+   Invoke builder agent with:
+   "Build the [feature-name] feature from docs/specs/[feature-name].md
+
+   Mode: Direct Build (sequential)
+
+   Read the spec and implement the feature sequentially."
+   ```
+
+   **IF spec says "Parallel: N modules in M phases":**
+   ```
+   Invoke builder agent with:
+   "Build the [feature-name] feature from docs/specs/[feature-name].md
+
+   Mode: Orchestration (REQUIRED)
+
+   You MUST orchestrate parallel builders according to the build plan.
+   The spec specifies a parallel build strategy - you must spawn multiple
+   builder agents for each phase as defined in the build plan.
+
+   DO NOT build everything yourself sequentially."
+   ```
+
+   **Important:**
+   - The builder will announce its strategy when it starts
+   - Verify the announcement matches the spec's strategy
+   - If builder doesn't announce, prompt it to do so
+
+6. **Verify orchestration (for parallel builds):**
+   - Watch for the builder's strategy announcement
+   - For parallel builds, you should see: "Spawning X parallel builders for Phase 1..."
+   - If you don't see parallel builder spawning within 1 minute, stop and investigate
+   - Common issue: Builder may need explicit reminder to orchestrate
+
+7. **Review the code with user if needed**
 
 ### Phase 3: Testing & Validation (with Feedback Loop)
 
-6. Invoke the **validator** agent to:
+8. Invoke the **validator** agent to:
    - Generate comprehensive tests based on the spec
    - Run all tests (unit, integration, edge cases)
    - Check for security issues
    - Verify acceptance criteria are met
    - Create validation report at `docs/validation/[feature-name]-report.md`
 
-7. **Validation Feedback Loop** (max 3 iterations):
+9. **Validation Feedback Loop** (max 3 iterations):
 
    **Iteration 1:**
    - If validation passes → proceed to Phase 4
@@ -93,15 +128,15 @@ The builder-validator feedback loop runs automatically (max 3 iterations).
        - Option B: Revisit spec (may be too ambitious)
        - Option C: Accept current state and document known issues
 
-8. Only proceed to deployment if validation passes
+10. Only proceed to deployment if validation passes
 
 ### Phase 4: Deployment
 
-9. Ask user if they want to deploy:
-   - If yes, continue to step 10
-   - If no, end workflow and provide summary
+11. Ask user if they want to deploy:
+    - If yes, continue to step 12
+    - If no, end workflow and provide summary
 
-10. Invoke the **shipper** agent to:
+12. Invoke the **shipper** agent to:
     - Verify all tests are passing
     - Set up CI/CD if needed
     - Deploy to staging first
@@ -110,7 +145,7 @@ The builder-validator feedback loop runs automatically (max 3 iterations).
     - Monitor initial metrics
     - Create deployment report
 
-11. After deployment, invoke **shipper** again to:
+13. After deployment, invoke **shipper** again to:
     - Analyze post-deployment feedback
     - Generate insights report
     - Identify any issues or improvements
@@ -118,7 +153,7 @@ The builder-validator feedback loop runs automatically (max 3 iterations).
 
 ### Phase 5: Iteration Planning
 
-12. Provide complete summary to user:
+14. Provide complete summary to user:
     - What was built
     - Test results
     - Deployment status

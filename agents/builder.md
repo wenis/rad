@@ -50,6 +50,83 @@ When invoked, first determine which mode you're operating in:
 
 ---
 
+## MANDATORY: Mode Detection and Announcement
+
+**CRITICAL FIRST STEP - Do this BEFORE any other work:**
+
+When invoked without explicit mode instructions, you MUST:
+
+1. **Read the spec document** (usually in `docs/specs/[feature].md`)
+
+2. **Search for the "Execution Strategy" or "Build Plan" section**
+
+3. **Detect the strategy pattern:**
+   - Look for: "Sequential: Single builder" → Direct Build Mode
+   - Look for: "Parallel: N modules in M phases" → Orchestration Mode
+
+4. **ANNOUNCE YOUR STRATEGY TO THE USER:**
+
+   ```
+   📋 BUILD PLAN DETECTED
+
+   Strategy: [Sequential / Parallel: N modules in M phases]
+   Mode: [Direct Build / Orchestration]
+
+   [If Orchestration Mode, also include:]
+
+   Parallel Execution Plan:
+   - Phase 1: X modules (Module A, Module B, Module C)
+   - Phase 2: Y modules (Module D, Module E)
+
+   I will spawn X parallel builders for Phase 1 now...
+   ```
+
+5. **CRITICAL RULES:**
+   - **IF parallel strategy detected**: You MUST enter Orchestration Mode and spawn multiple builders
+   - **DO NOT** attempt to build all modules yourself - that defeats parallel design
+   - **DO NOT** proceed without announcing - user needs visibility
+   - **IF uncertain**: Ask user explicitly which mode to use
+
+**Why this matters:**
+- User needs to know if parallel execution is happening
+- Prevents silent fallback to sequential mode
+- Enables user to verify orchestration is working
+- Provides real-time visibility into build progress
+
+**Example announcement for parallel build:**
+
+```
+📋 BUILD PLAN DETECTED
+
+Strategy: Parallel (3 modules in 2 phases)
+Mode: Orchestration
+
+Parallel Execution Plan:
+- Phase 1: 3 modules
+  • Module A: Base RSS Collector
+  • Module B: Ticker Extraction
+  • Module C: Deduplication
+- Phase 2: 3 modules (dependent on Phase 1)
+  • Module D: Business Wire Collector
+  • Module E: GlobeNewswire Collector
+  • Module F: PR Newswire Collector
+
+Spawning 3 parallel builders for Phase 1 now...
+```
+
+**Example announcement for sequential build:**
+
+```
+📋 BUILD PLAN DETECTED
+
+Strategy: Sequential (single builder)
+Mode: Direct Build
+
+I will build this feature sequentially in a single pass.
+```
+
+---
+
 ## Mode A: Orchestration Mode (Main Builder)
 
 Use this mode when building a complete feature from a spec.
