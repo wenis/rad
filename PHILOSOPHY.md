@@ -467,6 +467,190 @@ Track these to ensure balance:
 
 ---
 
+## Parallel Development (v2.0)
+
+### What Changed
+
+v2.0 introduces **parallel module development** - building independent parts of a feature simultaneously for 2-3x speed improvement.
+
+**Key principle:** Maintain all quality gates while enabling parallel execution.
+
+### Parallel Module Design
+
+**When planner creates parallel modules:**
+
+✅ **DO:**
+- Design modules with clear boundaries (single responsibility)
+- Define interfaces before building (contracts)
+- Ensure modules are independently testable
+- Identify dependencies explicitly (phases)
+- Use dependency injection (not global state)
+
+❌ **DON'T:**
+- Create circular dependencies (blocks parallelization)
+- Share mutable global state (race conditions)
+- Tightly couple modules (reduces benefit)
+- Make modules too granular (overhead > benefit)
+
+### Parallel Execution Strategy
+
+**Planner's decision framework:**
+
+**Use Parallel When:**
+- Feature has 3+ independent components
+- Components can be built without waiting for each other
+- Complexity justifies coordination overhead
+- Team/timeline benefits from speed boost
+
+**Use Sequential When:**
+- Simple feature (1-2 components)
+- Tightly coupled components
+- Prototype/experiment (speed over optimization)
+- User explicitly prefers simple approach
+
+**Let planner decide** - It analyzes dependencies automatically and chooses optimal strategy.
+
+### Module Isolation Requirements
+
+**For parallel modules to work:**
+
+1. **No circular dependencies**
+   - Module A can depend on Module B
+   - Module B cannot depend on Module A
+   - Dependencies must form a directed acyclic graph (DAG)
+
+2. **No shared mutable state**
+   - No global variables modified by multiple modules
+   - Use dependency injection instead
+   - Pass state as parameters
+
+3. **Clear interfaces**
+   - Define contracts before building
+   - All exports explicitly declared
+   - Type-safe interactions
+
+4. **Independent testing**
+   - Module tests run in isolation
+   - Mock external dependencies
+   - No cross-module test dependencies
+
+### Validation Strategy
+
+**Three-tier validation:**
+
+**Tier 1: Module-Level** (parallel)
+- Each module validated immediately after building
+- Tests run in isolation (mocked dependencies)
+- Fast feedback (don't wait for other modules)
+- 3 iterations max per module
+
+**Tier 2: Integration-Level** (after modules pass)
+- Test modules working together
+- Verify integration points
+- Catch cross-module issues
+- 3 iterations max for integration
+
+**Tier 3: System-Level** (comprehensive)
+- End-to-end acceptance criteria
+- Full security and performance checks
+- Complete user flows
+- Final quality gate before deployment
+
+### Integration Principles
+
+**After parallel modules complete:**
+
+1. **Detect conflicts first** - Run integration-conflict-detector before wiring
+2. **Smoke test fast** - Run quick integration tests (30s) before full validation
+3. **Fix at source** - Send issues back to module builders, not integration builder
+4. **Keep integration thin** - Glue code only, not business logic
+
+### Speed vs. Quality in Parallel
+
+**Strict (non-negotiable):**
+- ✅ All modules must pass validation before integration
+- ✅ Integration tests must pass before deployment
+- ✅ No module bypasses quality gates
+- ✅ Same 3-iteration limit per module
+
+**Flexible (context-dependent):**
+- Module complexity (some simple, some complex)
+- Validation thoroughness (critical vs standard modules)
+- Integration strategy (stub dependencies vs wait)
+
+**Quality gates remain the same** - parallel execution speeds up the process without reducing quality.
+
+### Continuous Improvement
+
+**Learn from each parallel build:**
+
+1. **Track metrics** - Build time, speedup, bottlenecks
+2. **Identify patterns** - Which module types are slow? Which fail often?
+3. **Optimize strategies** - Use historical data for better planning
+4. **Improve estimates** - Learn actual vs estimated durations
+
+**build-plan-optimizer** learns over time to suggest better module breakdowns.
+
+### Anti-Patterns for Parallel Development
+
+### ❌ Too Many Modules
+
+**Symptoms:**
+- Breaking feature into 10+ tiny modules
+- Coordination overhead > time savings
+- More time integrating than building
+
+**Impact:** Slower than sequential despite parallelization
+
+**Fix:** Aim for 2-5 modules per phase (sweet spot)
+
+### ❌ Premature Parallelization
+
+**Symptoms:**
+- Using parallel for simple 2-component feature
+- Overhead not justified by complexity
+- Sequential would be faster
+
+**Impact:** Wasted time on coordination
+
+**Fix:** Let planner decide - it knows when parallel helps
+
+### ❌ Hidden Dependencies
+
+**Symptoms:**
+- Modules marked "independent" but actually depend on each other
+- Circular imports discovered during integration
+- Global state causing race conditions
+
+**Impact:** Integration failures, wasted parallel build time
+
+**Fix:** Run module-boundary-validator before starting build
+
+### ❌ Integration Hell
+
+**Symptoms:**
+- All modules pass individual validation
+- Integration phase fails repeatedly
+- Type mismatches, missing exports, incompatible interfaces
+
+**Impact:** Lose all time savings in integration debugging
+
+**Fix:** Generate interfaces upfront, run conflict detector early
+
+### ✅ Right Balance
+
+**Characteristics:**
+- 2-5 modules per phase
+- Clear interfaces defined before building
+- Modules truly independent (no hidden deps)
+- Fast modules don't block slow ones
+- Immediate validation per module
+- Clean integration with smoke tests
+
+**Impact:** 2-3x faster builds with same quality
+
+---
+
 ## Summary: The Rules
 
 ### Strict Rules (Always Follow)
@@ -474,9 +658,10 @@ Track these to ensure balance:
 1. **Establish system context** - Run `/init-project` before first feature, maintain SYSTEM.md
 2. **Create artifacts** - Spec, validation report, deployment report
 3. **Pass quality gates** - Tests pass, no critical issues, acceptance criteria met
-4. **Use feedback loop** - Max 3 validator-builder iterations
+4. **Use feedback loop** - Max 3 validator-builder iterations (per module in parallel builds)
 5. **Follow standard formats** - Consistent templates for all artifacts
 6. **Monitor production** - Always measure impact of deployments
+7. **🆕 Maintain module isolation** - No circular deps, no shared mutable state (parallel builds)
 
 ### Flexible Rules (Adapt to Context)
 

@@ -116,12 +116,55 @@ Brief summary of changes and motivation.
 2. Verify agent reads correct context files
 3. Check that output artifacts are created correctly
 4. Ensure feedback loop still works
+5. **🆕 Test parallel workflow** (for complex features)
 
 **Key principles:**
 - Agents must read `docs/SYSTEM.md` FIRST
 - Agents should read `docs/CONVENTIONS.md` if it exists
 - Maintain backwards compatibility where possible
 - Document breaking changes clearly
+- **🆕 Support both sequential and parallel execution modes**
+
+### Working with Parallel Workflow (v2.0)
+
+**New in v2.0:** RAD System supports parallel module development.
+
+**If modifying planner agent:**
+- Ensure build plans include dependency analysis
+- Test with both simple (sequential) and complex (parallel) features
+- Verify `dependency-analyzer` skill integration
+- Check module interface generation
+
+**If modifying builder agent:**
+- Test orchestration mode (spawning sub-builders)
+- Test module mode (building single module)
+- Test integration mode (wiring modules)
+- Verify progress dashboard updates
+- Check parallel spawn with Task tool (multiple calls in one message)
+
+**If modifying validator agent:**
+- Test module-level validation (isolated)
+- Test integration-level validation (cross-module)
+- Test system-level validation (comprehensive)
+- Verify report formats for each level
+
+**Testing parallel workflows:**
+```bash
+# Test with a complex feature (should trigger parallel)
+/plan "add user authentication with email verification and password reset"
+# Check that build plan has phases and modules
+
+/build  # Should spawn multiple builders
+# Verify progress dashboard shows parallel execution
+
+/validate  # Should show module-level and integration reports
+```
+
+**Key files to check:**
+- `docs/specs/[feature].md` - Contains "Build Plan" section
+- `docs/progress/[feature]-build-progress.md` - Real-time status
+- `docs/validation/[feature]-[module]-report.md` - Module reports
+- `docs/validation/[feature]-integration-report.md` - Integration report
 
 ### Modifying Commands
 
@@ -179,12 +222,23 @@ templates/       # Document templates
 
 ### Manual Testing Checklist
 
+**Basic Workflow:**
 - [ ] Run `/init-project` successfully
-- [ ] Run `/rapid-dev` on a small feature
+- [ ] Run `/rapid-dev` on a small feature (sequential)
 - [ ] Verify all agents execute correctly
 - [ ] Check artifacts are created in `docs/`
 - [ ] Verify feedback loop works (builder-validator)
 - [ ] Test with different tech stacks (Python, Node.js, etc.)
+
+**🆕 Parallel Workflow (v2.0):**
+- [ ] Run `/rapid-dev` on complex feature (parallel)
+- [ ] Verify build plan shows phases and modules
+- [ ] Check progress dashboard generates and updates
+- [ ] Verify multiple builders spawn simultaneously
+- [ ] Check module-level validation reports
+- [ ] Verify integration validation runs after modules
+- [ ] Test with module validation failures (iteration loop)
+- [ ] Verify metrics analyzer generates performance report
 
 ### Edge Cases to Test
 
@@ -202,18 +256,24 @@ templates/       # Document templates
 - 📊 Analytics and metrics integration
 - 🔄 CI/CD integration improvements
 - 🧪 More comprehensive testing strategies
+- **🆕 Parallel workflow optimization** (improve build plan strategies)
+- **🆕 Module pattern templates** (reusable parallel module structures)
 
 **Medium Priority:**
-- 📚 More examples and tutorials
+- 📚 More examples and tutorials (especially parallel workflow)
 - 🎨 Better error messages
 - 🚀 Performance optimizations
 - 🔍 Better debugging tools
+- **🆕 Parallel build visualizations** (better progress tracking)
+- **🆕 Historical metrics dashboard** (track build performance over time)
 
 **Ideas Welcome:**
 - New skills for specific domains
 - Improvements to existing agents
 - Better documentation
 - Integration with other tools
+- **🆕 AI-powered build plan optimization** (ML-based module breakdown)
+- **🆕 Cross-project learning** (share patterns across projects)
 
 ## Community
 

@@ -8,10 +8,11 @@
 
 A complete **Claude Code workflow system** that turns feature ideas into production deployments through specialized AI agents with automated testing, security scanning, and deployment monitoring.
 
-**🚀 Speed:** Build and deploy features in hours, not days
+**🚀 Speed:** Build and deploy features in hours, not days (2-3x faster with parallel development)
 **🛡️ Quality:** Automated testing, security scanning, and validation before every deploy
 **📚 Knowledge:** Every decision captured in structured documents (specs, ADRs, reports)
 **🤖 Automated:** Four specialized agents (planner, builder, validator, shipper) handle the entire workflow
+**⚡ Parallel:** Complex features built with multiple modules simultaneously (v2.0)
 
 ## Who is this for?
 
@@ -19,6 +20,55 @@ A complete **Claude Code workflow system** that turns feature ideas into product
 - **Startups** that need to iterate quickly while maintaining production stability
 - **Solo developers** building serious projects who want professional workflows
 - **Teams** tired of manual coordination between planning, coding, testing, and deploying
+
+## 🆕 Upgrading from v1.x
+
+If you already have RAD System installed, here's how to upgrade to v2.0 with parallel development support:
+
+### Quick Upgrade (Recommended)
+
+```bash
+cd your-project/.claude
+git pull origin main
+```
+
+That's it! The new parallel workflow is backward compatible - your existing projects will continue to work.
+
+### What's New in v2.0
+
+**🚀 Parallel Development** - Build features 2-3x faster:
+- Planner automatically breaks features into parallel modules
+- Builder spawns multiple sub-builders simultaneously
+- Validators run in parallel for faster feedback
+- Real-time progress dashboards show build status
+
+**10 New Skills** for parallel workflow:
+- `dependency-analyzer` - Creates optimal build plans
+- `module-interface-generator` - Defines clean contracts
+- `progress-dashboard-generator` - Real-time build progress
+- `integration-conflict-detector` - Catches issues early
+- `parallel-test-coordinator` - Faster test execution
+- `module-stub-generator` - Unblocks dependencies
+- Plus 4 more optimization skills (see Skills section below)
+
+**Enhanced Agents**:
+- Planner now creates structured build plans with dependency analysis
+- Builder orchestrates parallel workers automatically
+- Validator supports module, integration, and system-level testing
+
+### Backward Compatibility
+
+✅ v2.0 is fully backward compatible:
+- Sequential builds still work (for simple features)
+- Planner auto-detects when to use parallel vs sequential
+- Existing slash commands work unchanged
+- All existing skills and agents enhanced, not replaced
+
+### No Action Required
+
+Your existing projects work as-is. Parallel development activates automatically for complex features!
+
+---
 
 ## Quick Start
 
@@ -119,7 +169,19 @@ Each agent:
 ✅ Follows quality gates consistently
 ✅ Communicates via structured files
 
-### Skills (24 Specialized Capabilities)
+### Skills (34 Specialized Capabilities)
+
+**🆕 Parallel Development (10 NEW)**
+- dependency-analyzer - Analyzes code dependencies for optimal module breakdown
+- module-interface-generator - Generates clean contracts for parallel modules
+- progress-dashboard-generator - Real-time build progress tracking
+- integration-conflict-detector - Detects conflicts before integration
+- parallel-test-coordinator - Coordinates parallel test execution
+- module-stub-generator - Creates stubs to unblock dependencies
+- module-boundary-validator - Validates module isolation
+- build-plan-optimizer - Learns from history to optimize strategies
+- integration-smoke-test-generator - Fast smoke tests for integration
+- parallel-build-metrics-analyzer - Analyzes performance and bottlenecks
 
 **Infrastructure & DevOps (6)**
 - docker-compose-builder, env-config-manager, database-migration-manager
@@ -185,6 +247,93 @@ When you run `/init-project`, you're asked if you want to include opinionated co
 4. Agents will follow your updated conventions
 
 **Example:** If you don't like 80% coverage requirement, change it to 70% in CONVENTIONS.md - agents will follow the updated target.
+
+## Parallel Development (v2.0)
+
+### How It Works
+
+**Automatic parallelization** - Planner detects when features can be built in parallel:
+
+```markdown
+Feature: User Authentication
+
+Build Plan (auto-generated):
+Phase 1 (Parallel):
+  - Module A: Password Validation (3 min)
+  - Module B: JWT Tokens (3 min)
+  - Module C: Email Service (8 min)
+
+Phase 2 (Parallel - after Phase 1):
+  - Module D: Auth API (4 min, depends on A+B)
+  - Module E: Password Reset (4 min, depends on A+C)
+
+Integration: Wire modules together (2 min)
+
+Total: ~12 minutes (vs ~25 minutes sequential = 2.1x faster)
+```
+
+### Key Features
+
+**Intelligent Planning**:
+- `dependency-analyzer` examines code structure
+- Identifies truly independent modules
+- Creates phases based on dependencies
+- Generates clean module interfaces
+
+**Parallel Execution**:
+- Builder spawns multiple sub-builders simultaneously
+- Each module validates immediately after building
+- Progress dashboard shows real-time status
+- Fast modules don't wait for slow ones
+
+**Quality Assurance**:
+- Module-level validation (tests in isolation)
+- Integration validation (tests modules together)
+- System-level validation (comprehensive E2E)
+- Conflict detection before integration
+
+**Continuous Improvement**:
+- Metrics analyzer tracks performance
+- Build plan optimizer learns from history
+- Identifies bottlenecks automatically
+- Suggests optimizations for future builds
+
+### When Parallel Development Activates
+
+**Automatic (default)**:
+- Planner assesses feature complexity
+- 3+ independent components → Parallel strategy
+- 1-2 tightly coupled components → Sequential strategy
+- User can override with clarifying questions
+
+**Sequential fallback**:
+- Simple features (single responsibility)
+- Tightly coupled code (can't be split)
+- Prototypes (speed over optimization)
+- User preference (asks if unsure)
+
+### Example: Parallel vs Sequential
+
+```bash
+# Same command, different execution based on complexity:
+
+/rapid-dev "add simple contact form"
+→ Sequential (1 builder, ~8 minutes)
+
+/rapid-dev "add user authentication with email/password"
+→ Parallel (3 modules in 2 phases, ~12 minutes vs ~25 sequential)
+```
+
+### Benefits
+
+- **2-3x faster builds** for complex features
+- **Immediate validation** per module (faster feedback)
+- **No blocking** - fast modules complete first
+- **Better quality** - isolated testing + integration testing
+- **Transparent progress** - see exactly what's happening
+- **Continuous learning** - builds get faster over time
+
+---
 
 ## The Philosophy
 
