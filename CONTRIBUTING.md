@@ -63,7 +63,7 @@ Brief summary of changes and motivation.
 
 1. **Create skill directory:**
    ```bash
-   mkdir .claude/skills/my-skill-name
+   mkdir skills/my-skill-name
    ```
 
 2. **Create SKILL.md** following this template:
@@ -169,11 +169,10 @@ Brief summary of changes and motivation.
 
 **Directory structure:**
 ```
-.claude/
-  agents/          # Agent prompts
-  skills/          # Skill directories with SKILL.md
-  commands/        # Slash command definitions
-  templates/       # Document templates
+agents/          # Agent prompts
+skills/          # Skill directories with SKILL.md
+commands/        # Slash command definitions
+templates/       # Document templates
 ```
 
 ## Testing Your Changes
@@ -246,7 +245,7 @@ We follow semantic versioning (MAJOR.MINOR.PATCH):
 ## Getting Help
 
 **Stuck?**
-1. Read `.claude/README.md` for workflow details
+1. Read `README.md` for workflow details
 2. Check existing issues for similar problems
 3. Open a discussion with specific questions
 4. Tag `question` label on issues
