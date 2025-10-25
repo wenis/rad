@@ -456,13 +456,316 @@ Total time: 2 hours (spec + build + 2 validation iterations + deploy)
 Result: High-quality feature shipped fast
 ```
 
+## Parallel Builder-Validator Loops (v2.0)
+
+### How Parallel Loops Work
+
+When building features with multiple modules in parallel, each module gets its own builder-validator feedback loop.
+
+**Key difference:** Loops run **simultaneously** for independent modules.
+
+### Parallel Loop Execution
+
+```
+Phase 1 (3 modules in parallel):
+
+Module A:
+  Builder A builds → Validator A tests → PASS (1 iteration) ✅
+  Duration: 3m 30s
+
+Module B:
+  Builder B builds → Validator B tests → PASS (1 iteration) ✅
+  Duration: 3m 15s
+
+Module C:
+  Builder C builds → Validator C tests → 2 FAILURES
+  Iteration 1: Builder C fixes → Validator C re-tests → 1 FAILURE
+  Iteration 2: Builder C fixes → Validator C re-tests → PASS ✅
+  Duration: 9m 15s (slowest)
+
+All Phase 1 modules validated at: 9m 15s
+(vs 16m if sequential)
+```
+
+### Multi-Tier Validation Reports
+
+**Tier 1: Module Reports** (per module)
+```
+docs/validation/
+  auth-password-module-report.md       # Module A
+  auth-jwt-module-report.md            # Module B
+  email-service-module-report.md       # Module C
+```
+
+**Tier 2: Integration Report** (after all modules pass)
+```
+docs/validation/
+  auth-integration-report.md           # Tests A+B+C together
+```
+
+**Tier 3: System Report** (final comprehensive)
+```
+docs/validation/
+  auth-system-report.md                # Full E2E validation
+```
+
+### Module Report Format
+
+```markdown
+# Validation Report - [Feature/Module Name] (MODULE-LEVEL)
+
+## Validation Scope
+**Level:** Module
+**Module:** Module A (Password Validation)
+**Phase:** 1
+**Validation Mode:** Isolated (dependencies mocked)
+
+## Summary
+- Total Tests: 25
+- Passed: 25
+- Failed: 0
+- Coverage: 94%
+- Iteration: 1
+
+## Module Status
+✅ Module validated successfully
+
+**Next:** Module will proceed to integration phase when all Phase 1 modules pass.
+```
+
+### Integration Report Format
+
+```markdown
+# Validation Report - [Feature] (INTEGRATION-LEVEL)
+
+## Validation Scope
+**Level:** Integration
+**Modules Tested:** Module A, Module B, Module C (wired together)
+**Validation Mode:** Integration (real dependencies)
+
+## Summary
+- Total Integration Tests: 15
+- Passed: 15
+- Failed: 0
+
+## Integration Points Tested
+✅ Module A ↔ Module D: Password validation in auth API
+✅ Module B ↔ Module D: Token generation in auth API
+✅ Module A ↔ Module E: Password hashing in reset flow
+✅ Module C ↔ Module E: Email sending in reset flow
+
+## Integration Status
+✅ All modules integrate successfully
+
+**Next:** Proceed to system-level validation
+```
+
+### Parallel Loop Orchestration
+
+```python
+# Pseudocode for parallel loops
+
+def run_parallel_build(build_plan):
+    """Execute parallel build with per-module validation loops."""
+
+    for phase in build_plan.phases:
+        print(f"Starting Phase {phase.number}...")
+
+        # Spawn all module builders in parallel
+        module_results = {}
+
+        for module in phase.modules:
+            # Each module gets its own loop
+            result = spawn_parallel(
+                module_build_validate_loop,
+                module=module,
+                max_iterations=3
+            )
+            module_results[module.name] = result
+
+        # Wait for all modules in phase to complete
+        wait_all(module_results)
+
+        # Check if all passed
+        if any(not r.passed for r in module_results.values()):
+            # Some modules failed after 3 iterations
+            failed = [m for m, r in module_results.items() if not r.passed]
+            print(f"❌ Phase {phase.number} incomplete:")
+            print(f"   Failed modules: {failed}")
+            return escalate_to_user(failed_modules=failed)
+
+        print(f"✅ Phase {phase.number} complete (all modules validated)")
+
+    # All phases complete - run integration
+    integration_result = run_integration_loop(
+        modules=all_modules,
+        max_iterations=3
+    )
+
+    if not integration_result.passed:
+        return escalate_to_user(integration_failed=True)
+
+    print("✅ All modules and integration validated")
+    return success()
+
+
+def module_build_validate_loop(module, max_iterations=3):
+    """Run build-validate loop for a single module."""
+
+    iteration = 0
+    while iteration < max_iterations:
+        iteration += 1
+
+        if iteration == 1:
+            # Initial build
+            builder_result = build_module(module)
+        else:
+            # Fix issues from validation
+            builder_result = fix_module_issues(
+                module=module,
+                report=f"docs/validation/{module.name}-report.md"
+            )
+
+        # Validate immediately (don't wait for other modules)
+        validation_result = validate_module(
+            module=module,
+            validation_scope="MODULE",  # Isolated testing
+            iteration=iteration
+        )
+
+        if validation_result.all_passed:
+            print(f"✅ {module.name} validated (iteration {iteration})")
+            return success(module=module, iterations=iteration)
+
+        if iteration >= max_iterations:
+            print(f"❌ {module.name} failed after {max_iterations} iterations")
+            return failure(module=module, iterations=iteration)
+
+        print(f"⚠️  {module.name} has issues, fixing (iteration {iteration})...")
+
+    return failure(module=module)
+```
+
+### Parallel Loop Benefits
+
+**Speed:**
+- Modules validate immediately (no waiting)
+- Fast modules complete early
+- Slow modules don't block fast ones
+- 2-3x faster overall
+
+**Quality:**
+- Same 3-iteration limit per module
+- Same validation rigor
+- Isolation catches module-specific issues
+- Integration catches cross-module issues
+
+**Visibility:**
+- Per-module progress tracking
+- Real-time status dashboard
+- Clear attribution of issues
+- Parallel validation reports
+
+### Handling Parallel Loop Failures
+
+**Scenario:** Module A and B pass, Module C fails after 3 iterations
+
+**Options:**
+
+1. **Continue with successful modules:**
+   - Proceed to Phase 2 with A and B
+   - Build dependent modules using A+B
+   - Fix Module C separately, add later
+
+2. **Block and escalate:**
+   - Don't proceed to Phase 2
+   - User fixes Module C manually
+   - Re-run validation
+   - Continue when C passes
+
+3. **Simplify feature:**
+   - Remove Module C from feature
+   - Adjust dependent modules
+   - Ship without C, add in iteration 2
+
+**Default:** Block and escalate (option 2) - maintain quality gate.
+
+### Integration Loop After Parallel Modules
+
+After all modules in all phases pass their individual loops:
+
+```python
+def run_integration_loop(modules, max_iterations=3):
+    """Run integration validation loop."""
+
+    iteration = 0
+    while iteration < max_iterations:
+        iteration += 1
+
+        if iteration == 1:
+            # Initial integration
+            integration_builder = wire_modules_together(modules)
+        else:
+            # Fix integration issues
+            integration_builder = fix_integration_issues(
+                report="docs/validation/[feature]-integration-report.md"
+            )
+
+        # Run integration-level validation
+        validation = validate_integration(
+            modules=modules,
+            validation_scope="INTEGRATION",
+            iteration=iteration
+        )
+
+        if validation.all_passed:
+            return success()
+
+        if iteration >= max_iterations:
+            return escalate_to_user()
+
+    return failure()
+```
+
+### Comparison: Sequential vs Parallel Loops
+
+**Sequential (v1.x):**
+```
+Builder builds everything → Validator tests everything
+If failures: Builder fixes → Validator re-tests
+Max 3 iterations for entire feature
+Total: ~25 minutes
+```
+
+**Parallel (v2.0):**
+```
+Phase 1 (parallel):
+  Builder A → Validator A (3m)
+  Builder B → Validator B (3m)
+  Builder C → Validator C (9m with 2 iterations)
+
+Phase 2 (parallel):
+  Builder D → Validator D (4m)
+  Builder E → Validator E (4m)
+
+Integration:
+  Integration Builder → Integration Validator (2m)
+
+Total: ~12 minutes (2.1x faster)
+```
+
+**Key:** Each module's loop is independent, failures in one don't block others.
+
+---
+
 ## Conclusion
 
 The feedback loop is the secret sauce that enables "rapid agile at vibe speeds":
 
 - **Fast**: Automated, no waiting for humans
 - **Reliable**: Catches issues before production
-- **Scalable**: Works for any feature size
+- **Scalable**: Works for any feature size (now even faster with parallel)
 - **Traceable**: All communication documented
+- **🆕 Parallel**: Multiple loops run simultaneously for complex features
 
-By using files as the communication mechanism, we get the benefits of async, persistent, structured communication between agents.
+By using files as the communication mechanism, we get the benefits of async, persistent, structured communication between agents - now with parallel execution for maximum speed.

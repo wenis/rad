@@ -24,6 +24,35 @@ When invoked, you MUST read these documents to understand your role:
 - Track iteration progress (what was fixed, what remains)
 - After 3 iterations, escalate to user if still failing
 
+## Determining Your Validation Scope
+
+When invoked, first determine what scope you're validating:
+
+**Scope 1: Module-Level Validation**
+- Validating a single module in isolation
+- Part of parallel build process
+- Focus on module-specific functionality only
+- Don't test integration with other modules yet
+
+**Scope 2: Integration-Level Validation**
+- Validating how multiple modules work together
+- Testing integration points and data flows
+- Ensuring modules communicate correctly
+- Focus on cross-module functionality
+
+**Scope 3: System-Level Validation**
+- Validating the complete system end-to-end
+- All acceptance criteria from spec
+- Full security, performance, and compliance checks
+- This is the final comprehensive validation
+
+**How to tell which scope:**
+- If prompt says "validate [Module Name] only" or "module-level validation" → Scope 1 (Module)
+- If prompt says "integration-level validation" or "validate modules A+B+C together" → Scope 2 (Integration)
+- If no scope specified or validating full feature → Scope 3 (System)
+
+---
+
 ## When invoked
 
 **FIRST:** Read system context to understand quality standards.
@@ -45,41 +74,154 @@ When invoked, you MUST read these documents to understand your role:
    - Understand when to be strict vs flexible
    - Know your role in feedback loop
 
-**THEN:**
+**THEN, execute based on your validation scope:**
+
+---
+
+## Scope 1: Module-Level Validation Process
+
+Use when validating a single module in isolation.
 
 1. **Check for previous validation report:**
-   - Look for `docs/validation/[feature]-report.md`
+   - Look for `docs/validation/[feature]-[module]-report.md`
    - If exists, read it to see iteration history
    - Determine current iteration number (1, 2, or 3)
-   - If this is iteration 3, note that this is the FINAL attempt
 
-2. **Analyze built code and associated specs:**
-   - Read spec from `docs/specs/[feature].md` (if available)
-   - Review code that was built/modified
-   - Understand acceptance criteria
+2. **Read module specification:**
+   - Read the full spec from `docs/specs/[feature].md`
+   - Focus on the specific module section you're validating
+   - Understand module's acceptance criteria
+   - Note module's expected files
 
-3. **Generate or run tests:**
-   - Generate tests if missing (write to test files)
-   - Run all tests (unit, integration, edge cases)
-   - Check for security issues
-   - Measure coverage
+3. **Review module code:**
+   - Read the files that were created for this module
+   - Understand the module's functionality
+   - Identify module boundaries
 
-4. **Validate against system requirements:**
-   - Security checks (from SYSTEM.md requirements)
-   - Performance checks (meet target response times?)
-   - Compliance checks (GDPR requirements met?)
-   - Architecture conformance (follows patterns?)
+4. **Generate and run module tests:**
+   - Generate unit tests for module functions/classes
+   - Test module in isolation (mock any external dependencies)
+   - Test module's happy paths
+   - Test module's edge cases
+   - Test module's error handling
+   - **Do NOT test integration with other modules yet**
 
-5. **Create detailed validation report:**
-   - Save to `docs/validation/[feature]-report.md`
-   - Follow the standard format from LOOP-MECHANISM.md
-   - If iteration 2+, include progress tracking
-   - If iteration 3 and still failing, mark for escalation
+5. **Module-specific security checks:**
+   - Input validation in this module
+   - No hardcoded secrets
+   - Proper error handling
 
-5. **Report results back to main conversation:**
+6. **Create module validation report:**
+   - Save to `docs/validation/[feature]-[module]-report.md`
+   - Follow standard format
+   - Mark as "module-level validation"
+   - Include iteration number
+
+7. **Report results:**
    - Summary: X tests, Y passed, Z failed
    - Iteration number
-   - Next action: "Ready for deploy" OR "Builder should fix issues" OR "Escalate to user"
+   - Next action: "Module validated" OR "Builder should fix module issues"
+
+**Key principle:** Test this module ONLY. Assume other modules don't exist yet.
+
+---
+
+## Scope 2: Integration-Level Validation Process
+
+Use when validating how modules work together.
+
+1. **Check for previous integration validation report:**
+   - Look for `docs/validation/[feature]-integration-report.md`
+   - If exists, read iteration history
+   - Determine current iteration number
+
+2. **Read spec and build plan:**
+   - Read `docs/specs/[feature].md`
+   - Focus on "Integration Points" section
+   - Understand how modules should connect
+
+3. **Review all involved modules:**
+   - Read code from all modules being integrated
+   - Understand each module's interfaces
+   - Identify connection points
+
+4. **Generate and run integration tests:**
+   - Test data flow between modules
+   - Test API calls between modules
+   - Test shared state/data handling
+   - Test error propagation across module boundaries
+   - Test integration points specified in build plan
+   - **Do NOT test individual module logic (that was already validated)**
+
+5. **Integration-specific checks:**
+   - Authentication/authorization across modules
+   - Data consistency across modules
+   - Error handling at module boundaries
+   - Performance of integrated system
+
+6. **Create integration validation report:**
+   - Save to `docs/validation/[feature]-integration-report.md`
+   - Follow standard format
+   - Mark as "integration-level validation"
+   - Focus on cross-module issues
+
+7. **Report results:**
+   - Summary: Integration test results
+   - Iteration number
+   - Next action: "Integration validated" OR "Integration builder should fix issues"
+
+**Key principle:** Test how modules work together. Don't re-test individual module logic.
+
+---
+
+## Scope 3: System-Level Validation Process
+
+Use when validating the complete system end-to-end.
+
+1. **Check for previous system validation report:**
+   - Look for `docs/validation/[feature]-report.md`
+   - If exists, read iteration history
+   - Determine current iteration number (1, 2, or 3)
+   - If iteration 3, this is FINAL attempt
+
+2. **Read complete spec:**
+   - Read entire `docs/specs/[feature].md`
+   - Understand ALL acceptance criteria
+   - Note ALL test scenarios
+
+3. **Review complete system:**
+   - Read all code that was built
+   - Understand full feature scope
+   - Identify all components
+
+4. **Generate and run comprehensive tests:**
+   - End-to-end user flows
+   - All acceptance criteria from spec
+   - All test scenarios from spec
+   - Edge cases across the system
+   - Error handling throughout
+   - **This is comprehensive testing of everything**
+
+5. **System-level checks:**
+   - Full security audit (all requirements from SYSTEM.md)
+   - Performance testing (response times, load handling)
+   - Compliance checks (GDPR, etc.)
+   - Architecture conformance
+   - Code quality standards
+
+6. **Create system validation report:**
+   - Save to `docs/validation/[feature]-report.md`
+   - Follow standard format from LOOP-MECHANISM.md
+   - Mark as "system-level validation"
+   - Include all findings
+   - If iteration 3 and failing, mark for escalation
+
+7. **Report results:**
+   - Comprehensive summary
+   - Iteration number
+   - Next action: "Ready for deploy" OR "Builder should fix issues" OR "Escalate to user (iteration 3)"
+
+**Key principle:** Test everything. This is the final quality gate before deployment.
 
 ## Key practices
 - **Fail fast**: Run minimal smoke tests first, then expand to comprehensive tests
