@@ -1,47 +1,64 @@
 # Troubleshooting Parallel Builds
 
-## Problem: Orchestrator Not Being Invoked for Parallel Builds
+## Architecture: Commands Orchestrate, Not Agents
 
-If you invoke `/build` on a spec with parallel execution strategy, but parallel builders aren't being spawned, follow this diagnostic guide.
+**IMPORTANT: There is no orchestrator agent.** The `/build` command itself orchestrates parallel builds.
 
-**Important:** The RAD system now uses command-level routing. Commands read the spec and route to either:
-- **orchestrator agent** (for parallel builds)
-- **builder agent** (for sequential builds)
+**Why?** The Task tool (used to spawn sub-agents) is only available in the main conversation, not to spawned sub-agents. Therefore:
+- ✅ Commands can use Task (they run in main conversation)
+- ❌ Agents cannot use Task (they ARE spawned via Task)
 
-This troubleshooting guide helps diagnose routing and orchestration issues.
+**Correct architecture:**
+1. `/build` command reads spec
+2. Command detects "Parallel: N modules" strategy
+3. **Command itself** spawns parallel builders using Task tool
+4. **Command** monitors, validates, and coordinates integration
+5. **Command** reports final status
+
+This troubleshooting guide helps diagnose parallel build issues.
 
 ## Quick Diagnosis
 
-### Step 1: Check Which Agent Was Invoked
+### Step 1: Check If Command Is Orchestrating
 
-When you invoke `/build`, Claude Code shows which agent is being invoked. Look for this in the output:
+When you invoke `/build` on a parallel spec, the command should announce orchestration:
 
 ```
-orchestrator(Orchestrate the build for...)
-  OR
-builder(Read the spec at...)
+📋 PARALLEL BUILD ORCHESTRATION
+
+Spec: docs/specs/SPEC-XXX.md
+Strategy: Parallel (3 modules in 2 phases)
+
+Phase 1: 3 modules (parallel)
+- Module A: ...
+- Module B: ...
+- Module C: ...
+
+Spawning 3 parallel builders for Phase 1 now...
 ```
 
-**Which agent was invoked?**
-- **orchestrator** → Correct for parallel builds, check Step 3
-- **builder** → **THIS IS THE PROBLEM** → Should have invoked orchestrator, see Fix below
+**Then you should see multiple Task tool calls in ONE message.**
 
-### Step 2: Check the Routing Logic
+**What actually happened?**
+- ✅ Saw announcement + multiple Task calls → Parallel orchestration working!
+- ❌ Builder agent invoked instead → Command isn't detecting parallel strategy
+- ❌ No Task calls after announcement → Command trying to delegate to agent (old architecture)
+
+### Step 2: Check the Command Logic
 
 The `/build` command should:
 1. Read the spec file
 2. Find "Execution Strategy" section
-3. Route based on strategy:
-   - "Parallel" → Invoke orchestrator
-   - "Sequential" → Invoke builder
+3. If "Parallel: N modules" detected:
+   - Announce orchestration plan
+   - Use Task tool to spawn parallel builders
+   - Monitor and coordinate validation
+4. If "Sequential" detected:
+   - Invoke builder agent directly
 
 **Did the command read the spec first?**
 - ✅ YES → Command is working correctly
-- ❌ NO → **THIS IS THE PROBLEM** → Command skipped routing logic, see Fix below
-
-**What was the actual routing decision?**
-- Check command output for: "Found: Execution Strategy: Parallel" or similar
-- If command didn't output routing decision → It may have skipped reading spec
+- ❌ NO → Command may have skipped detection logic
 
 ### Step 3: Check the Spec
 
@@ -99,96 +116,122 @@ The spec doesn't define a parallel execution strategy. Either:
 When a parallel build works correctly, you'll see:
 
 ```
-📋 BUILD PLAN DETECTED
+📋 PARALLEL BUILD ORCHESTRATION
 
+Spec: docs/specs/SPEC-XXX.md
 Strategy: Parallel (3 modules in 2 phases)
-Mode: Orchestration
 
-Parallel Execution Plan:
-- Phase 1: 3 modules
-  • Module A: Base collector
-  • Module B: Parser
-  • Module C: Validator
+Phase 1: 3 modules (parallel)
+- Module A: Base collector
+- Module B: Parser
+- Module C: Validator
 
 Spawning 3 parallel builders for Phase 1 now...
 ```
 
-Then you'll see multiple Task tool invocations in a single message.
+**Then immediately:** Multiple Task tool invocations in a SINGLE message:
+```
+Task 1: Build Module A
+Task 2: Build Module B
+Task 3: Build Module C
+```
+
+After builders complete, the command spawns validators, handles validation loops, spawns integration builder, and reports final status.
 
 ## What NOT to See
 
-If the builder starts using Write or Edit tools directly without announcing orchestration mode, **mode detection failed**.
+❌ **Builder agent invoked directly** - If you see `builder(Read the spec...)` for a parallel spec, the command isn't detecting the parallel strategy
 
-## Root Cause Explanation
+❌ **Orchestrator agent invoked** - Old architecture; orchestrator agents can't actually spawn sub-agents (they don't have Task tool access)
 
-The RAD system uses command-level routing:
+❌ **Sequential builds for parallel spec** - Builder using Write/Edit directly without Task spawning indicates parallel detection failed
 
-1. **Command** receives user request
-2. **Command** reads the spec file
-3. **Command** finds "Execution Strategy" section
-4. **If "Parallel"** → Command invokes **orchestrator** agent
-5. **If "Sequential"** → Command invokes **builder** agent
+## Architecture Explanation
 
-**Orchestrator agent** (for parallel builds):
-- Parses build plan
-- Spawns multiple builder sub-agents via Task tool
-- Monitors progress
-- Coordinates validation loops
-- Handles integration
+**Current Architecture (Correct):**
+1. `/build` command reads spec
+2. Command detects "Parallel: N modules" strategy
+3. **Command itself** spawns parallel builders using Task tool
+4. Command monitors completion, spawns validators, handles validation loops
+5. Command spawns integration builder after all phases complete
+6. Command reports final status
 
-**Builder agent** (for sequential builds):
-- Reads spec
-- Implements feature directly
-- Uses Write/Edit tools
+**Why commands orchestrate, not agents:**
+- Task tool is ONLY available in main conversation
+- Commands run in main conversation → ✅ Can use Task
+- Agents are spawned via Task → ❌ Cannot spawn other agents
+
+**Old Architecture (Broken):**
+- Command delegated to orchestrator agent
+- Orchestrator tried to spawn builders via Task
+- Task not available to sub-agents → orchestrator failed
+- This is why orchestrator.md was removed
+
+**Builder agent** (for sequential builds only):
+- Invoked by command when "Sequential" strategy detected
+- Reads spec, implements directly with Write/Edit
 - Reports completion
-
-**If the wrong agent is invoked:**
-- Builder invoked for parallel spec → Builds sequentially (slow, no parallelization)
-- Orchestrator invoked for sequential spec → Unnecessary overhead
 
 ## How to Prevent This
 
-When writing custom commands:
+When writing custom commands for parallel workflows:
 
-**✅ Correct approach:**
+**✅ Correct approach (commands orchestrate):**
 ```markdown
 1. Read the spec file
 2. Find "Execution Strategy" section
-3. If "Parallel" → Invoke orchestrator: "Orchestrate the build for {spec_path}"
-4. If "Sequential" → Invoke builder: "Read the spec at {spec_path} and implement the feature."
+3. If "Parallel" → Command uses Task tool to spawn parallel builders
+4. If "Sequential" → Command invokes builder agent
+5. Command monitors, validates, and coordinates
 ```
 
-**❌ Wrong approach:**
+**❌ Wrong approach (delegating to agent):**
 ```markdown
-1. Invoke builder directly without reading spec
-2. Add detailed instructions to prompt
-3. Bypass routing logic
+1. Read spec, detect parallel
+2. Invoke orchestrator agent to handle it
+3. Orchestrator fails (no Task access)
+4. Falls back to sequential or fails completely
 ```
 
-**Command responsibilities:**
-- Read specs
-- Detect execution strategy
-- Route to appropriate agent
-- Use minimal prompts (< 20 words)
+**Key principle:** Only the main conversation (commands) can use Task tool. Agents spawned via Task cannot spawn other agents.
+
+**Command responsibilities for parallel builds:**
+- Read specs and detect strategy
+- Parse build plan (phases, modules, dependencies)
+- Spawn parallel builders using Task tool
+- Monitor completion
+- Spawn validators immediately
+- Handle validation loops (max 3 iterations)
+- Spawn integration builder
+- Report final status
 
 **Agent responsibilities:**
-- **Orchestrator:** Coordinate parallel builds
-- **Builder:** Implement features
-- **Validator:** Test features
-- **Planner:** Design features
+- **Builder:** Implement individual modules or complete features
+- **Validator:** Test features and create validation reports
+- **Planner:** Design features and create specs
+- **Shipper:** Deploy and monitor features
 
 ## Testing the Fix
 
 After updating RAD commands, test with a parallel spec:
 
-1. Create a test spec with parallel strategy
-2. Run `/build` and watch which agent is invoked
-3. Verify command reads the spec
-4. Verify command outputs routing decision
-5. Verify **orchestrator** is invoked (not builder)
-6. Verify orchestrator announces: "📊 ORCHESTRATION COMPLETE"
-7. Verify orchestrator spawns multiple Task tool calls
-8. Verify you see "Spawning X parallel builders..."
+1. Create or use an existing spec with parallel strategy
+2. Run `/build docs/specs/{spec-name}.md`
+3. **Verify command reads the spec** - Should see: `Read(docs/specs/...)`
+4. **Verify command detects parallel** - Should output: `Strategy: Parallel (N modules in M phases)`
+5. **Verify command announces orchestration** - Should see:
+   ```
+   📋 PARALLEL BUILD ORCHESTRATION
+   Spawning N parallel builders for Phase 1 now...
+   ```
+6. **Verify multiple Task calls in ONE message** - Should see:
+   ```
+   Task 1: Build Module A
+   Task 2: Build Module B
+   Task 3: Build Module C
+   ```
+7. **Verify NO orchestrator agent invoked** - Should NOT see: `orchestrator(...)`
+8. **Verify command continues monitoring** - Should see validators spawned after builders complete
 
 ## Need More Help?
 
