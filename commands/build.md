@@ -1,25 +1,33 @@
 ---
 name: build
-description: Implements features from specs by routing to the appropriate agent (orchestrator for parallel builds, builder for sequential builds)
+description: Implements features from specs. For parallel builds (multiple modules), orchestrates builders directly using Task tool. For sequential builds (single module), delegates to builder agent.
 ---
 
 # Build Feature
 
-Implement a feature from specifications by routing to the appropriate agent based on the build strategy.
+Implement a feature from specifications, either by orchestrating parallel module builds or by delegating to the builder agent for sequential implementation.
+
+**Why this command exists:** Different features require different build strategies. Complex features benefit from parallel module development (faster delivery), while simple features are built sequentially (less overhead). This command detects the strategy and executes accordingly.
 
 ## Usage
 
 Use this command when you want to:
-- Implement a feature from a spec
-- Prototype a new idea quickly
-- Refactor existing code
-- Fix a bug
+- Implement a feature from a spec (**Why:** Specs provide clear requirements and success criteria)
+- Prototype a new idea quickly (**Why:** Rapid prototyping validates ideas before full investment)
+- Refactor existing code (**Why:** Structured approach reduces regression risk)
+- Fix a bug (**Why:** Systematic implementation ensures proper testing)
 
 ## How This Works
 
-This command reads the spec to determine the build strategy, then routes to the appropriate agent:
-- **Parallel strategy** → Invoke orchestrator agent (coordinates multiple builders)
-- **Sequential strategy** → Invoke builder agent (builds directly)
+**Strategy detection:**
+1. Read spec file to find "Execution Strategy" section
+2. **If "Parallel: N modules"** → Command orchestrates using Task tool (**Why:** Only main conversation has Task access)
+3. **If "Sequential"** → Command delegates to builder agent (**Why:** Builder handles full feature implementation efficiently)
+
+**Why commands orchestrate (not agents):**
+- Task tool is ONLY available in main conversation
+- Sub-agents spawned via Task cannot spawn other sub-agents
+- Therefore: Commands must handle parallel orchestration directly
 
 ## Instructions
 
@@ -43,14 +51,18 @@ This command reads the spec to determine the build strategy, then routes to the 
 
 ### Step 2a: Orchestrate Parallel Build (Parallel Strategy)
 
-**DO NOT delegate to an orchestrator agent. YOU orchestrate the parallel build using the Task tool directly.**
+**YOU orchestrate directly using Task tool. Do NOT delegate to an orchestrator agent.**
+
+**Why you orchestrate (not an agent):** Sub-agents spawned via Task cannot spawn other sub-agents. Only the main conversation (this command) has Task tool access.
 
 1. **Parse the build plan from the spec:**
-   - Identify all phases
-   - Identify modules per phase
-   - Note dependencies
+   - Identify all phases (**Why:** Phases have dependencies; must complete in order)
+   - Identify modules per phase (**Why:** Modules in same phase can build in parallel)
+   - Note dependencies (**Why:** Integration depends on understanding module relationships)
 
 2. **Announce your orchestration plan to the user:**
+
+**Why announce:** Users need visibility into parallel execution. Without announcement, builds appear silent for long periods, causing confusion.
    ```
    📋 PARALLEL BUILD ORCHESTRATION
 
@@ -70,37 +82,93 @@ This command reads the spec to determine the build strategy, then routes to the 
 
 3. **For each phase, spawn parallel builders using Task tool:**
 
+**Why all in ONE message:** Making 3 Task calls in a SINGLE message enables true parallelism. Sequential Task calls would defeat the purpose of parallel builds.
+
+**Why minimal prompts:** Builder agent knows the complete process. Detailed prompts add noise and can contradict the agent's instructions. Trust the agent's expertise.
+
    <example>
+   <name>Phase 1 with 3 independent modules</name>
+
    For Phase 1 with 3 modules, make 3 Task tool calls in ONE message:
 
    Task 1:
    ```
    Tool: Task
    subagent_type: general-purpose
-   description: Build Module A
+   description: Build Module A - Form 4 Parser
    prompt: |
-     Build Module A from the spec.
+     Build Module A: Form 4 Parser from SPEC-0016.
 
-     Read docs/specs/{feature-name}.md and implement the "{Module A Name}" section.
+     Read docs/specs/SPEC-0016-sec-filing-content-parsing.md and implement Module A.
 
-     Scope: {list module scope from spec}
-
-     Files to create: {list expected files}
+     Scope: Parse Form 4 XML, create app/services/parsers/form4_parser.py, create database model and migration.
 
      Follow spec requirements. Report when complete.
    ```
 
-   Task 2: {similar for Module B}
-   Task 3: {similar for Module C}
+   Task 2:
+   ```
+   Tool: Task
+   subagent_type: general-purpose
+   description: Build Module B - XBRL Parser
+   prompt: |
+     Build Module B: XBRL Parser from SPEC-0016.
+
+     Read docs/specs/SPEC-0016-sec-filing-content-parsing.md and implement Module B.
+
+     Scope: Parse XBRL 10-Q/10-K documents, create app/services/parsers/xbrl_parser.py, create database model and migration.
+
+     Follow spec requirements. Report when complete.
+   ```
+
+   Task 3:
+   ```
+   Tool: Task
+   subagent_type: general-purpose
+   description: Build Module C - 13F Parser
+   prompt: |
+     Build Module C: 13F Parser from SPEC-0016.
+
+     Read docs/specs/SPEC-0016-sec-filing-content-parsing.md and implement Module C.
+
+     Scope: Parse 13F holdings, create app/services/parsers/form13f_parser.py, create database models and migrations.
+
+     Follow spec requirements. Report when complete.
+   ```
    </example>
 
-4. **Monitor builder completion** and spawn validators immediately when builders finish
+4. **Monitor builder completion and spawn validators immediately:**
 
-5. **Handle validation loops** (max 3 iterations per module)
+**Why immediately:** Fast feedback enables builders to fix issues while context is fresh. Waiting for all builders to complete delays feedback and slows iteration.
 
-6. **After all phases complete**, spawn integration builder
+**How to spawn validators:** Use Task tool with `validator` agent, provide module-specific scope.
 
-7. **Report final status** to user
+5. **Handle validation loops (max 3 iterations per module):**
+
+**Why max 3:** Balances thoroughness with efficiency. After 3 attempts, issues likely require architectural changes or user guidance.
+
+**How loops work:** Builder fixes → Validator retests → If fail, repeat (max 3 times) → If still failing, report to user
+
+6. **After all phases complete, spawn integration builder:**
+
+**Why wait for all phases:** Integration wires modules together; all modules must exist and be validated first.
+
+**Integration prompt example:**
+```
+Build Module D: Integration Layer from SPEC-0016.
+
+Wire the 3 completed parser modules (Form 4, XBRL, 13F) to SEC collectors.
+
+Read docs/specs/SPEC-0016-sec-filing-content-parsing.md Module D section.
+
+Create integration workflows and trigger logic. Report when complete.
+```
+
+7. **Report final status to user:**
+
+**Why report:** Users need summary of what was built, validation status, and any issues encountered.
+
+**Output format guidance:** Begin with `📊 PARALLEL BUILD COMPLETE` header for consistency.
 
 **Example flow:**
 ```
