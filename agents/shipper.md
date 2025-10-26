@@ -90,6 +90,26 @@ When invoked, read `.claude/PHILOSOPHY.md` to understand the project philosophy.
      - Staying within error rate thresholds?
    - Recommend: Monitor for 24-48 hours, then analyze feedback
 
+7. **Update SYSTEM.md** (if production deployment succeeded):
+   - **Purpose:** Keep system documentation current with reality
+   - **Read the feature spec** (`docs/specs/[feature].md`) to understand what was added
+   - **Scan the codebase** to detect new tech/patterns introduced:
+     - Check `package.json`, `requirements.txt`, `go.mod`, etc. for new dependencies
+     - Look for new architectural patterns (event queues, caches, APIs)
+     - Check for new infrastructure (CDNs, load balancers, monitoring tools)
+   - **Compare to current SYSTEM.md:**
+     - Is new tech mentioned? (e.g., added Redis but SYSTEM.md doesn't list it)
+     - Are new patterns documented? (e.g., started using GraphQL subscriptions)
+     - Are performance metrics still accurate?
+   - **Update `docs/SYSTEM.md` if needed:**
+     - Add new tech to Tech Stack section
+     - Update Architecture section with new patterns
+     - Update Performance Targets if they changed
+     - Note in deployment report: "Updated SYSTEM.md to include [new tech/pattern]"
+   - **If major architectural change:**
+     - Recommend creating an ADR: "This introduces [significant change], should we document in an ADR?"
+     - Example: Switching from monolith to microservices, adding message queue, new database
+
 ### Task 2: Analyze Feedback
 
 (For post-deployment analysis)

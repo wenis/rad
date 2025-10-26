@@ -1,60 +1,70 @@
 ---
 name: plan
-description: Invoke the planner agent to create specifications from requirements
+description: Invoke the planner agent to understand project state and plan features
 ---
 
 # Plan Feature
 
-Invoke the planner agent to translate ideas and requirements into structured specifications.
-
-## Usage
-
-Use this command when you want to:
-- Create specs for a new feature
-- Break down a large feature into tasks
-- Clarify vague requirements
-- Document acceptance criteria
+Invoke the planner agent to understand your project and plan what to work on next.
 
 ## What This Does
 
-The planner agent will:
-1. Gather requirements from your description
-2. Create user stories and acceptance criteria
-3. Define test scenarios
-4. Identify risks and dependencies
-5. Write a spec document to `docs/specs/[feature-name].md`
+The planner agent is **context-aware**. It will:
+
+**If you provide a feature description:**
+- Create structured specs with user stories and acceptance criteria
+- Define test scenarios and dependencies
+- Write spec to `docs/specs/[feature-name].md`
+
+**If you DON'T provide a feature description:**
+- Read `docs/SYSTEM.md` to understand your project
+- Review existing specs in `docs/specs/` to see what's been planned
+- Review validation reports to see what's been built
+- **Recommend what to work on next** based on project state
+- Suggest next steps (new features, incomplete work, etc.)
 
 ## Instructions
 
-Invoke the **planner** agent with the user's feature request or requirements.
+**ALWAYS invoke the planner agent immediately.** Do not wait for more input.
 
-Pass all context from the user about:
-- Feature description
-- Target users
-- Business goals
-- Constraints or requirements
-- Any existing specs or related features
+**Pass to the planner:**
+1. The user's feature description (if provided)
+2. Context that you were invoked via `/plan` command
+3. All relevant conversation context
 
-The planner will create a comprehensive spec document and report back with:
-- Path to the created spec file
-- Summary of user stories
-- Key acceptance criteria
-- Recommended next steps (usually: invoke builder)
+**The planner will:**
+- Read system context (`docs/SYSTEM.md`, `docs/CONVENTIONS.md`)
+- Understand project state (specs, validation reports)
+- Either create a new spec OR recommend what to work on next
+- Report back with clear next steps
 
-## Example
+## Example: With Feature Description
 
-**User says:** "I want to add a user profile page where users can update their name, email, and avatar"
+**User says:** `/plan add user profile page`
 
-**You do:**
-1. Invoke planner agent with this requirement
-2. Planner creates `docs/specs/user-profile.md`
-3. Review spec with user
-4. If approved, suggest running `/build` next
+**Planner does:**
+1. Reads `docs/SYSTEM.md` to understand tech stack
+2. Creates `docs/specs/user-profile.md` with requirements
+3. Recommends: "Run `/build` to implement"
+
+## Example: Without Feature Description (Resuming Work)
+
+**User says:** `/plan`
+
+**Planner does:**
+1. Reads `docs/SYSTEM.md` to understand what we're building
+2. Checks `docs/specs/` to see what's been planned
+3. Checks `docs/validation/` to see what's been built
+4. Reports: "I see we're building TaskFlow. You have 3 features planned:
+   - ✅ User auth (completed)
+   - ⏸️ Task management (spec exists, not built yet)
+   - ⏸️ Real-time collaboration (spec exists, not built yet)
+
+   Recommended: Run `/build` to implement task management"
 
 ## Next Steps
 
 After planning:
-- Review the spec with the user
-- Make adjustments if needed
-- When approved, run `/build` to implement
-- Or run `/rapid-dev` to do the full cycle
+- Review the planner's recommendations
+- If creating a new feature, run `/build` to implement
+- If resuming work, follow the planner's suggested next steps

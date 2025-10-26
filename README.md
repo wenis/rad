@@ -152,6 +152,29 @@ Before building features, `/init-project` creates:
 
 **Agents read SYSTEM.md and CONVENTIONS.md first** to understand your system and coding standards before planning, building, validating, or deploying.
 
+### Keeping Documentation Current
+
+As your project evolves, SYSTEM.md stays up-to-date automatically:
+
+**🤖 Automatic Updates:**
+- **Shipper agent** updates SYSTEM.md after successful deployments
+  - Detects new tech added (Redis, GraphQL, etc.)
+  - Documents new architecture patterns
+  - Updates performance metrics
+
+**⚠️ Drift Detection:**
+- **Planner agent** warns when specs introduce new tech not in SYSTEM.md
+- Example: "This feature needs Redis, but SYSTEM.md doesn't list it - should we add it?"
+- Prevents accidental tech sprawl
+
+**🔄 Manual Sync:**
+- `/sync-docs` - Scan codebase and sync SYSTEM.md with reality
+- Useful after building multiple features or before major releases
+- Compares dependencies to documented tech stack
+- Presents changes for your approval
+
+**Result:** SYSTEM.md stays accurate without manual maintenance. Agents always work with current information.
+
 ### Agents (Workflows)
 
 Four specialized agents handle different phases of development:
@@ -212,10 +235,15 @@ Skills are invoked by agents when needed (you don't call them directly).
 
 ### Commands
 
-Five slash commands orchestrate the workflow:
+Seven slash commands orchestrate the workflow:
 
-- `/rapid-dev` - Full end-to-end cycle
-- `/plan` - Just planning phase
+**Setup & Maintenance:**
+- `/init-project` - Initialize project with SYSTEM.md, tech stack, and architecture
+- `/sync-docs` - Scan codebase and update SYSTEM.md to match current reality
+
+**Development Workflow:**
+- `/rapid-dev` - Full end-to-end cycle (plan → build → validate → ship)
+- `/plan` - Just planning phase (or check project status if no feature specified)
 - `/build` - Just implementation phase
 - `/validate` - Just testing phase
 - `/ship` - Just deployment phase

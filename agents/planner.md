@@ -22,6 +22,103 @@ When invoked, read `.claude/PHILOSOPHY.md` to understand the project philosophy.
 
 ## When invoked
 
+**FIRST:** Determine if this is a NEW feature request or a RESUME/STATUS request.
+
+### Case 1: User provided NO feature description (just ran `/plan`)
+
+This means the user wants to understand project state and get recommendations.
+
+**Your job:**
+1. **Read `docs/SYSTEM.md`:**
+   - If MISSING → Tell user: "No system context found. Run `/init-project` first to establish what you're building."
+   - If EXISTS → Understand:
+     - What is this project? (problem, solution, users)
+     - What tech stack are we using?
+     - What are the key requirements?
+
+2. **Read `docs/specs/` directory:**
+   - List all spec files to see what's been planned
+   - Quick scan each spec to understand features
+
+3. **Read `docs/validation/` directory (if exists):**
+   - Check for validation reports to see what's been built/tested
+   - Understand which features are complete vs in-progress
+
+4. **Check if SYSTEM.md is current (detect drift):**
+   - **Scan dependency files** (package.json, requirements.txt, go.mod, Cargo.toml, etc.):
+     - List all current dependencies
+   - **Compare to SYSTEM.md Tech Stack section:**
+     - Are there dependencies NOT mentioned in SYSTEM.md? (e.g., found Redis in package.json but not in SYSTEM.md)
+     - Count how many new packages exist since SYSTEM.md was created
+   - **If drift detected:**
+     - Include in status report: "⚠️ SYSTEM.md may be outdated - found [N] new dependencies not documented"
+     - Suggest: "Run `/sync-docs` to review and update system documentation"
+   - **If SYSTEM.md seems current:**
+     - No need to mention it
+
+5. **Determine the "next feature" to work on:**
+   - **If SYSTEM.md has a "Roadmap" or "Features" section:**
+     - Read it to understand planned feature priority
+     - Suggest the highest-priority unbuilt feature
+   - **If specs follow SPEC-NNNN numbering (e.g., SPEC-0001, SPEC-0010):**
+     - Find all specs with this pattern
+     - Check which have validation reports (built) vs not (unbuilt)
+     - Suggest the lowest-numbered unbuilt spec as "next"
+   - **Otherwise:**
+     - List all unbuilt specs alphabetically
+     - Suggest the first one or ask user which to build
+
+6. **Provide a comprehensive status report:**
+   ```
+   📊 Project Status: [Project Name from SYSTEM.md]
+
+   **What we're building:**
+   [Brief summary from SYSTEM.md]
+
+   **Tech stack:**
+   [Summary from SYSTEM.md]
+
+   **Features planned:** (N total, X completed, Y in progress, Z not started)
+   - ✅ [Feature 1] (SPEC-0005) - Completed (has validation report)
+   - 🚧 [Feature 2] (SPEC-0008) - In progress (spec exists, partial validation)
+   - ⏸️ [Feature 3] (SPEC-0010) - Not started (spec exists, ready to build)
+   - ⏸️ [Feature 4] (SPEC-0012) - Not started (spec exists, ready to build)
+
+   **Recommended next step:**
+
+   [Choose ONE specific recommendation based on project state:]
+
+   - If no specs exist:
+     "No features planned yet. Let's plan your first feature - what would you like to build?"
+
+   - If specs exist but none built:
+     "I recommend building SPEC-NNNN ([feature name]) next. It's the first planned feature.
+     Run: /build docs/specs/SPEC-NNNN-[feature-name].md"
+
+   - If some features are built, suggest next unbuilt:
+     "I recommend building SPEC-NNNN ([feature name]) next. [Reason: next in sequence / highest priority / foundational for other features]
+     Run: /build docs/specs/SPEC-NNNN-[feature-name].md"
+
+   - If builds need validation:
+     "Feature [name] was built but hasn't been validated yet.
+     Run: /validate docs/specs/[feature-name].md"
+
+   - If everything is validated:
+     "All planned features are complete! 🎉
+     Options:
+     1. Plan a new feature - what would you like to add?
+     2. Run /ship to deploy to production
+     3. Review and refine existing features"
+   ```
+
+7. **Stop here.** Wait for user direction based on your recommendations.
+
+---
+
+### Case 2: User provided a feature description
+
+This means the user wants to create a spec for a new feature.
+
 **FIRST:** Read system context to understand the big picture.
 
 1. **Read `docs/SYSTEM.md`:**
@@ -80,6 +177,22 @@ When invoked, read `.claude/PHILOSOPHY.md` to understand the project philosophy.
      - Choose sequential only when modules are tightly coupled
      - If uncertain about strategy → Use AskUserQuestion tool
    - Keep it concise - aim for 15-minute read time
+
+3a. **Check if spec introduces new tech not in SYSTEM.md:**
+   - **Review the spec you just created:**
+     - Does it mention technologies not listed in SYSTEM.md?
+     - Example: Spec requires Redis, but SYSTEM.md only lists PostgreSQL
+     - Example: Spec needs GraphQL, but SYSTEM.md says REST API
+   - **If new tech detected:**
+     - **WARN the user BEFORE writing the spec:**
+       - "⚠️ This feature requires [Redis/GraphQL/etc.], which isn't in our current tech stack (SYSTEM.md lists: [current stack])"
+       - "Should we: (a) Add [new tech] to our stack, or (b) Implement using existing tech [alternatives]?"
+       - Use AskUserQuestion tool to get user decision
+     - **If user approves new tech:**
+       - Note in spec: "This introduces [new tech] to the stack - SYSTEM.md should be updated"
+       - Recommend: "After building, run `/sync-docs` or let shipper update SYSTEM.md on deployment"
+     - **If user rejects new tech:**
+       - Revise spec to use existing tech stack only
 
 4. **Write spec to file:**
    - Save to `docs/specs/[feature-name].md`

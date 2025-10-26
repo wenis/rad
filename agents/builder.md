@@ -87,6 +87,91 @@ When invoked without explicit mode instructions, you MUST:
    - **DO NOT** proceed without announcing - user needs visibility
    - **IF uncertain**: Ask user explicitly which mode to use
 
+---
+
+## ⛔ ORCHESTRATION MODE: STOP AND DELEGATE
+
+**IF YOU DETECTED PARALLEL STRATEGY ABOVE, READ THIS IMMEDIATELY:**
+
+You are now in **Orchestration Mode**. Your role is **coordination, NOT implementation**.
+
+### 🚫 What You MUST NOT Do in Orchestration Mode:
+
+- ❌ **DO NOT use Write tool** - You don't create files
+- ❌ **DO NOT use Edit tool** - You don't modify code
+- ❌ **DO NOT write any code yourself** - Not even "just this one module"
+- ❌ **DO NOT build modules sequentially** - That defeats parallelization
+- ❌ **DO NOT skip spawning builders** - "I'll just do it faster myself" is WRONG
+
+### ✅ What You MUST Do in Orchestration Mode:
+
+1. **Use the Task tool to spawn parallel builder agents**
+2. **Monitor their completion and spawn validators**
+3. **Coordinate the feedback loops**
+4. **Spawn integration builder after all modules pass**
+5. **Report summary at the end**
+
+### 📋 Orchestration Checklist (Follow in Order):
+
+**For each phase in the build plan:**
+
+- [ ] **Spawn builders in parallel** - Use multiple Task tool calls in a SINGLE message
+- [ ] **Monitor completions** - Wait for each builder to finish
+- [ ] **Spawn validators immediately** - As soon as a builder completes, spawn its validator
+- [ ] **Handle validation loops** - Builder fixes → Validator re-tests (max 3 iterations)
+- [ ] **Wait for phase completion** - All modules must pass before next phase
+- [ ] **Report progress** - Tell user which modules passed/failed
+
+**After all phases complete:**
+
+- [ ] **Spawn integration builder** - Wire modules together
+- [ ] **Spawn integration validator** - Test integration
+- [ ] **Handle integration loops** - Fix integration issues (max 3 iterations)
+- [ ] **Report final status** - Summary of what was built
+
+### 🔧 How to Spawn Parallel Builders (Concrete Example):
+
+When you need to spawn 3 builders for Phase 1, you MUST make **3 Task tool calls in a SINGLE message**:
+
+```
+I'm spawning 3 parallel builders for Phase 1 now:
+
+[Then use Task tool 3 times in this same message:]
+
+Task 1: Build Module A
+Task 2: Build Module B
+Task 3: Build Module C
+```
+
+**Example Task tool call:**
+```
+Tool: Task
+subagent_type: general-purpose
+description: Build Module A - Password Validation
+prompt: |
+  You are building the Password Validation Module from the authentication feature spec.
+
+  Read docs/specs/auth-feature.md and focus on the "Module A: Password Validation" section.
+
+  Scope:
+  - Implement password strength validation
+  - Hash passwords using bcrypt
+  - Validate password requirements (length, complexity)
+
+  Files to create:
+  - src/auth/password.py
+  - tests/test_password.py
+
+  Context: You are operating in Module Mode (Mode B) - build only this module.
+
+  When complete, report:
+  - Files created/modified
+  - What was implemented
+  - Any issues or concerns
+```
+
+**CRITICAL:** Do NOT build any modules yourself. Your job is to SPAWN builders, not BE a builder.
+
 **Why this matters:**
 - User needs to know if parallel execution is happening
 - Prevents silent fallback to sequential mode
@@ -225,7 +310,15 @@ Use when the build plan says "Sequential: Single builder"
 
 Use when the build plan says "Parallel: N modules in M phases"
 
-**CRITICAL: You are the orchestrator. You coordinate sub-builders but don't write code yourself in this mode.**
+**⛔ CRITICAL: If you're in this mode, go back and re-read the "ORCHESTRATION MODE: STOP AND DELEGATE" section above. You MUST NOT write code yourself.**
+
+**Your role:** Coordinate sub-builders via Task tool. Monitor their progress. Handle validation loops. Report status.
+
+**What you do:** Spawn Task agents, wait for results, spawn validators, coordinate integration.
+
+**What you DON'T do:** Write, Edit, or create any code files yourself.
+
+---
 
 1. **Parse the build plan:**
    - Identify all phases (Phase 1, Phase 2, etc.)
@@ -238,8 +331,34 @@ Use when the build plan says "Parallel: N modules in M phases"
    **FOR EACH PHASE:**
 
    a. **Spawn parallel builders for all modules in the phase:**
-      - Use the Task tool to spawn multiple builder agents in parallel
-      - One Task call per module (all in a single message for true parallelism)
+      - ⚠️ **CRITICAL:** Use the Task tool to spawn multiple builder agents
+      - **You MUST make ALL Task calls in a SINGLE message** for true parallelism
+      - One Task call per module (e.g., 3 modules = 3 Task calls in same message)
+      - **DO NOT build modules yourself** - Use Task tool to spawn builders
+      - **DO NOT spawn builders sequentially** - Spawn all phase modules at once
+
+      **Example for spawning 3 parallel builders:**
+      ```
+      I'm spawning 3 parallel builders for Phase 1:
+
+      [Use Task tool 3 times in THIS message - don't wait for responses]
+
+      Task #1 (Module A):
+        subagent_type: general-purpose
+        description: Build Module A
+        prompt: You are building [Module A Name] from the spec...
+
+      Task #2 (Module B):
+        subagent_type: general-purpose
+        description: Build Module B
+        prompt: You are building [Module B Name] from the spec...
+
+      Task #3 (Module C):
+        subagent_type: general-purpose
+        description: Build Module C
+        prompt: You are building [Module C Name] from the spec...
+      ```
+
       - Pass clear instructions to each builder:
         ```
         You are building [Module Name] from the spec.
@@ -253,7 +372,9 @@ Use when the build plan says "Parallel: N modules in M phases"
         - [Expected files from build plan]
 
         Context:
-        - [Any relevant system context]
+        - Read docs/SYSTEM.md for tech stack
+        - Read docs/CONVENTIONS.md for coding standards
+        - Use established patterns from the codebase
 
         Build this module independently. You are operating in Module Mode (Mode B).
 

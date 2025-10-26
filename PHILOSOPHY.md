@@ -21,6 +21,33 @@ This creates:
 
 **All agents read SYSTEM.md FIRST** before working on any feature.
 
+### Keeping Documentation Current
+
+Documentation that drifts from reality is worse than no documentation - it misleads. RAD keeps SYSTEM.md current automatically:
+
+**Automatic Updates (Shipper):**
+- After successful production deployments, shipper scans what was built
+- Detects new tech added (Redis, GraphQL, new libraries)
+- Detects new patterns (event-driven, caching layers, WebSockets)
+- Updates `docs/SYSTEM.md` Tech Stack and Architecture sections
+- Recommends ADRs for major architectural changes
+
+**Drift Detection (Planner):**
+- When planning features, planner checks if spec introduces new tech
+- Warns: "This needs Redis, but SYSTEM.md doesn't list it - should we add it?"
+- Prevents accidental tech sprawl and ensures intentional decisions
+- When resuming work (/plan with no feature), planner scans dependencies
+- Reports if SYSTEM.md seems outdated, suggests `/sync-docs`
+
+**Manual Sync (/sync-docs):**
+- Scans dependency files (package.json, requirements.txt, etc.)
+- Compares actual tech stack to documented stack
+- Presents findings for user approval
+- Updates SYSTEM.md to match reality
+- Useful after building many features or before major releases
+
+**Result:** SYSTEM.md stays accurate. Agents always work with current information. New team members see the real system, not historical fiction.
+
 ## Core Tension
 
 **The Paradox:** We want to move fast like a startup prototype, but ship with the reliability of enterprise software.
