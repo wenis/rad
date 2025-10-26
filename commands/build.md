@@ -41,32 +41,78 @@ This command reads the spec to determine the build strategy, then routes to the 
 - Go directly to Step 2b (Builder)
 - Builder will implement without formal spec
 
-### Step 2a: Invoke Orchestrator Agent (Parallel Strategy)
+### Step 2a: Orchestrate Parallel Build (Parallel Strategy)
 
-**Use this EXACT minimal prompt:**
+**DO NOT delegate to an orchestrator agent. YOU orchestrate the parallel build using the Task tool directly.**
 
+1. **Parse the build plan from the spec:**
+   - Identify all phases
+   - Identify modules per phase
+   - Note dependencies
+
+2. **Announce your orchestration plan to the user:**
+   ```
+   📋 PARALLEL BUILD ORCHESTRATION
+
+   Spec: docs/specs/{feature-name}.md
+   Strategy: Parallel ({N} modules in {M} phases)
+
+   Phase 1: {X} modules (parallel)
+   - Module A: {name}
+   - Module B: {name}
+   - Module C: {name}
+
+   Phase 2: {Y} modules (sequential, depends on Phase 1)
+   - Module D: {name}
+
+   Spawning {X} parallel builders for Phase 1 now...
+   ```
+
+3. **For each phase, spawn parallel builders using Task tool:**
+
+   <example>
+   For Phase 1 with 3 modules, make 3 Task tool calls in ONE message:
+
+   Task 1:
+   ```
+   Tool: Task
+   subagent_type: general-purpose
+   description: Build Module A
+   prompt: |
+     Build Module A from the spec.
+
+     Read docs/specs/{feature-name}.md and implement the "{Module A Name}" section.
+
+     Scope: {list module scope from spec}
+
+     Files to create: {list expected files}
+
+     Follow spec requirements. Report when complete.
+   ```
+
+   Task 2: {similar for Module B}
+   Task 3: {similar for Module C}
+   </example>
+
+4. **Monitor builder completion** and spawn validators immediately when builders finish
+
+5. **Handle validation loops** (max 3 iterations per module)
+
+6. **After all phases complete**, spawn integration builder
+
+7. **Report final status** to user
+
+**Example flow:**
 ```
-Orchestrate the build for docs/specs/{feature-name}.md
-```
-
-**That's it. Nothing else.**
-
-The orchestrator will:
-- Parse the build plan
-- Spawn multiple builder agents in parallel
-- Monitor their progress
-- Coordinate validation loops
-- Handle integration
-- Report final status
-
-**Example:**
-```
-User: "Build the user authentication feature"
-You: [Read docs/specs/user-authentication.md]
+User: "Build the authentication feature"
+You: [Read docs/specs/authentication.md]
 You: [Find "Execution Strategy: Parallel (3 modules in 2 phases)"]
-You: [Invoke orchestrator]
-
-Prompt: "Orchestrate the build for docs/specs/user-authentication.md"
+You: [Announce plan]
+You: [Use Task tool 3 times in ONE message to spawn Phase 1 builders]
+You: [Monitor completion, spawn validators]
+You: [Handle validation loops]
+You: [Spawn integration builder]
+You: [Report complete]
 ```
 
 ### Step 2b: Invoke Builder Agent (Sequential Strategy)

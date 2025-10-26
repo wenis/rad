@@ -44,35 +44,34 @@ The builder-validator feedback loop runs automatically (max 3 iterations).
 
 ### Phase 2: Implementation
 
-4. **Route to appropriate agent based on build strategy:**
+4. **Determine build strategy and execute accordingly:**
 
-   **Read the spec to determine which agent to invoke:**
+   **Read the spec to determine approach:**
 
    a. Read `docs/specs/[feature-name].md`
    b. Find the "Build Plan" or "Execution Strategy" section
    c. Check the strategy:
-      - If "Parallel: N modules in M phases" → Invoke **orchestrator** (Step 5a)
-      - If "Sequential: Single builder" → Invoke **builder** (Step 5b)
-      - If unclear → Default to builder (Step 5b)
+      - If "Parallel: N modules in M phases" → Follow Step 5a (Orchestrate in main conversation)
+      - If "Sequential: Single builder" → Follow Step 5b (Invoke builder)
+      - If unclear → Default to Step 5b
 
-5a. **If Parallel Strategy - Invoke Orchestrator:**
+5a. **If Parallel Strategy - Orchestrate in Main Conversation:**
 
-    **Use this EXACT minimal prompt:**
-    ```
-    Orchestrate the build for docs/specs/[feature-name].md
-    ```
+    **DO NOT delegate to an orchestrator agent. YOU orchestrate using Task tool directly.**
 
-    **That's it. Nothing else.**
+    1. Parse build plan (phases, modules, dependencies)
+    2. Announce orchestration plan
+    3. For each phase:
+       - Spawn parallel builders using Task tool (all in ONE message)
+       - Monitor completion
+       - Spawn validators immediately when builders finish
+       - Handle validation loops (max 3 iterations per module)
+    4. Spawn integration builder after all phases
+    5. Report final status
 
-    The orchestrator will:
-    - Parse the build plan
-    - Spawn multiple builder agents in parallel
-    - Monitor their progress
-    - Coordinate validation loops
-    - Handle integration
-    - Report final status
+    See `/build` command documentation for detailed parallel orchestration steps.
 
-    **Skip to step 6** (orchestrator handles everything)
+    **Skip to step 6** (orchestration handles validation)
 
 5b. **If Sequential Strategy - Invoke Builder:**
 
@@ -91,14 +90,6 @@ The builder-validator feedback loop runs automatically (max 3 iterations).
 
     **Continue to step 6**
 
-**🚨 ENFORCEMENT CHECKLIST - Before Invoking Agent:**
-- [ ] Prompt is < 20 words
-- [ ] Prompt is EITHER: "Orchestrate..." OR "Read the spec...and implement..."
-- [ ] NO additional context, guidelines, or instructions
-- [ ] NO preambles, requirements, or numbered steps
-
-**If your prompt fails ANY check, DELETE IT and use the exact template above.**
-
 6. **Review the code/status with user if needed**
 
 ### Phase 3: Testing & Validation (with Feedback Loop)
@@ -112,7 +103,7 @@ The builder-validator feedback loop runs automatically (max 3 iterations).
 
 8. **Validation Feedback Loop** (max 3 iterations):
 
-   **Note:** For parallel builds, the orchestrator handles validation loops for each module. For sequential builds, you manage the feedback loop.
+   **Note:** For parallel builds (Step 5a), validation loops are handled during orchestration. For sequential builds (Step 5b), you manage the feedback loop here.
 
    **Iteration 1:**
    - If validation passes → proceed to Phase 4
