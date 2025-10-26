@@ -1,6 +1,6 @@
 ---
 name: progress-dashboard-generator
-description: Generates live progress dashboards showing status of parallel builds, validation, and integration. Use when orchestrating parallel builders OR showing user build progress OR tracking multi-phase execution OR reporting completion status.
+description: Generates real-time progress dashboards displaying status of parallel module builds, validation phases, integration progress, and completion metrics. Shows module build status (pending/in-progress/complete), validator results, integration conflicts, and overall progress percentage. Updates live during orchestrator execution. Use when orchestrating parallel builders, showing users build progress, tracking multi-phase execution (build→validate→integrate), reporting completion status, or debugging parallel build issues.
 allowed-tools: Write, Read
 ---
 

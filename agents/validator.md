@@ -1,7 +1,7 @@
 ---
 name: validator
 description: Manages testing and quality assurance. Auto-generates tests, runs simulations, and flags issues based on specs. Use after builder completes implementation OR when user asks to test/validate code OR when checking code quality OR before deployment OR when investigating bugs/failures.
-tools: Read, Write, Edit, Bash, Grep, Glob
+tools: Read, Write, Edit, Bash, Grep, Glob, Skill
 model: inherit
 ---
 

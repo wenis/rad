@@ -1,6 +1,6 @@
 ---
 name: performance-profiler
-description: Profiles application performance to identify bottlenecks, slow queries, memory leaks, and optimization opportunities. Use when investigating slow performance OR before optimization OR analyzing production issues OR improving response times.
+description: Profiles application performance using Chrome DevTools, Python cProfile, Node.js --inspect, or Go pprof to identify CPU bottlenecks, memory leaks, slow database queries (N+1 problems), and optimization opportunities. Generates flame graphs, analyzes heap snapshots, identifies hot paths, and provides actionable recommendations. Use when investigating slow API responses, debugging memory leaks, optimizing database queries, analyzing production performance issues, or preparing for scale.
 allowed-tools: Read, Grep, Bash, Write
 ---
 
@@ -20,18 +20,18 @@ You profile applications to identify performance bottlenecks and provide specifi
 ## Performance Categories
 
 ### 1. CPU Usage
-- Hot code paths consuming CPU
-- Inefficient algorithms
-- Unnecessary computations
+- Hot code paths consuming CPU cycles
+- Inefficient algorithms (O(n²) where O(n) possible)
+- Unnecessary computations in loops
 
 ### 2. Database Performance
 - Slow queries (N+1 problems)
 - Missing indexes
 - Full table scans
-- Connection pool issues
+- Connection pool exhaustion
 
 ### 3. Memory Usage
-- Memory leaks
+- Memory leaks (objects not garbage collected)
 - Large object allocations
 - Inefficient data structures
 
@@ -39,110 +39,51 @@ You profile applications to identify performance bottlenecks and provide specifi
 - File system operations
 - Network requests
 - External API calls
+- Blocking I/O
 
 ### 5. Concurrency Issues
 - Thread contention
 - Lock waiting
-- Blocking operations
+- Deadlocks
+- Blocking operations in async code
 
-## Profiling Tools
+## Quick Profiling Guide
 
-### Python
+### Python - cProfile (Built-in)
 
-**cProfile (built-in):**
 ```bash
 # Profile a script
 python -m cProfile -s cumulative script.py
 
-# Save profile data
+# Save and visualize
 python -m cProfile -o profile.stats script.py
-
-# Analyze with snakeviz
 pip install snakeviz
-snakeviz profile.stats
+snakeviz profile.stats  # Opens browser with interactive visualization
 ```
 
-**py-spy (production-safe):**
+**Output interpretation:**
+- `ncalls`: Number of calls
+- `tottime`: Total time in function (excluding subcalls)
+- `cumtime`: Cumulative time (including subcalls)
+- Focus on high `cumtime` functions
+
+### Node.js - clinic.js
+
 ```bash
-# Install
-pip install py-spy
-
-# Profile running process
-py-spy top --pid 12345
-
-# Generate flame graph
-py-spy record -o profile.svg --pid 12345
-
-# Profile for 60 seconds
-py-spy record -o profile.svg --duration 60 --pid 12345
-```
-
-**memory_profiler:**
-```bash
-# Install
-pip install memory_profiler
-
-# Decorate function
-from memory_profiler import profile
-
-@profile
-def my_func():
-    big_list = [1] * (10 ** 6)
-    return big_list
-
-# Run
-python -m memory_profiler script.py
-```
-
-### JavaScript/Node.js
-
-**Built-in profiler:**
-```bash
-# Profile with V8
-node --prof app.js
-
-# Process profile
-node --prof-process isolate-0xnnnnnnnnnnnn-v8.log > processed.txt
-```
-
-**clinic.js:**
-```bash
-# Install
 npm install -g clinic
 
-# Profile CPU (flame graph)
+# CPU profiling (flame graph)
 clinic flame -- node app.js
 
-# Profile event loop
+# Event loop issues
 clinic doctor -- node app.js
 
-# Profile memory
+# Memory profiling
 clinic heapprofiler -- node app.js
 ```
 
-**Chrome DevTools:**
-```javascript
-// In code: trigger profiler
-const inspector = require('inspector');
-const fs = require('fs');
-const session = new inspector.Session();
-session.connect();
+### Go - pprof (Built-in)
 
-session.post('Profiler.enable', () => {
-  session.post('Profiler.start', () => {
-    // Run code to profile
-    runExpensiveOperation();
-
-    session.post('Profiler.stop', (err, { profile }) => {
-      fs.writeFileSync('profile.cpuprofile', JSON.stringify(profile));
-    });
-  });
-});
-```
-
-### Go
-
-**pprof (built-in):**
 ```go
 import (
     "net/http"
@@ -153,8 +94,7 @@ func main() {
     go func() {
         http.ListenAndServe("localhost:6060", nil)
     }()
-
-    // Application code
+    // Your app code
 }
 ```
 
@@ -165,480 +105,358 @@ go tool pprof http://localhost:6060/debug/pprof/profile?seconds=30
 # Memory profile
 go tool pprof http://localhost:6060/debug/pprof/heap
 
-# Goroutine profile
-go tool pprof http://localhost:6060/debug/pprof/goroutine
+# View in browser
+go tool pprof -http=:8080 profile.pb.gz
 ```
 
-## Database Profiling
+## Complete Tool Guides
 
-### PostgreSQL
+For detailed profiling examples and advanced techniques:
 
-**Find slow queries:**
-```sql
--- Enable query logging
-ALTER SYSTEM SET log_min_duration_statement = 1000; -- Log queries > 1s
-SELECT pg_reload_conf();
+**Python Profiling** → `examples/python-profiling.md`
+- cProfile deep dive
+- py-spy for production
+- memory_profiler
+- line_profiler
+- Profiling async code
 
--- View slow queries
-SELECT
-  query,
-  calls,
-  total_time,
-  mean_time,
-  max_time
-FROM pg_stat_statements
-ORDER BY mean_time DESC
-LIMIT 10;
+**Node.js Profiling** → `examples/nodejs-profiling.md`
+- clinic.js toolkit
+- Chrome DevTools
+- 0x flame graphs
+- Heap snapshots
+- Production profiling
 
--- Explain query
-EXPLAIN (ANALYZE, BUFFERS) SELECT * FROM users WHERE email = 'test@example.com';
-```
+**Go Profiling** → `examples/go-profiling.md`
+- pprof CPU/memory/goroutine profiling
+- Flame graphs
+- Benchmarking
+- Race detection
 
-**Find missing indexes:**
-```sql
--- Tables with sequential scans
-SELECT
-  schemaname,
-  tablename,
-  seq_scan,
-  seq_tup_read,
-  idx_scan,
-  seq_tup_read / seq_scan AS avg_seq_read
-FROM pg_stat_user_tables
-WHERE seq_scan > 0
-ORDER BY seq_tup_read DESC
-LIMIT 10;
+**Database Profiling** → `reference/database-profiling.md`
+- PostgreSQL EXPLAIN ANALYZE
+- MySQL slow query log
+- N+1 query detection
+- Index optimization
 
--- Unused indexes
-SELECT
-  schemaname,
-  tablename,
-  indexname,
-  idx_scan
-FROM pg_stat_user_indexes
-WHERE idx_scan = 0
-  AND indexname NOT LIKE 'pg_toast%'
-ORDER BY pg_relation_size(indexrelid) DESC;
-```
+**Frontend Performance** → `reference/frontend-profiling.md`
+- Chrome DevTools Performance tab
+- Lighthouse
+- React Profiler
+- Bundle analysis
 
-### MySQL
+## Common Performance Issues
 
-**Enable slow query log:**
-```sql
-SET GLOBAL slow_query_log = 'ON';
-SET GLOBAL long_query_time = 1;
-SET GLOBAL slow_query_log_file = '/var/log/mysql/slow.log';
-```
+### N+1 Query Problem
 
-**Analyze slow queries:**
-```bash
-# Use pt-query-digest
-pt-query-digest /var/log/mysql/slow.log
-
-# Or mysqldumpslow
-mysqldumpslow -s t -t 10 /var/log/mysql/slow.log
-```
-
-**Explain query:**
-```sql
-EXPLAIN SELECT * FROM users WHERE email = 'test@example.com';
-```
-
-### MongoDB
-
-**Profile queries:**
-```javascript
-// Enable profiling
-db.setProfilingLevel(2); // Profile all queries
-
-// View slow queries
-db.system.profile.find({millis: {$gt: 100}}).sort({millis: -1}).limit(10);
-
-// Explain query
-db.users.find({email: 'test@example.com'}).explain('executionStats');
-```
-
-## Profiling Patterns
-
-### Profile API Endpoint (Python/Flask)
-
-**Add profiling middleware:**
+**Problem:**
 ```python
-from werkzeug.middleware.profiler import ProfilerMiddleware
-
-app = Flask(__name__)
-app.wsgi_app = ProfilerMiddleware(app.wsgi_app, restrictions=[30], profile_dir='./profiles')
-```
-
-**Or use custom decorator:**
-```python
-import cProfile
-import pstats
-from functools import wraps
-
-def profile(func):
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        profiler = cProfile.Profile()
-        profiler.enable()
-        result = func(*args, **kwargs)
-        profiler.disable()
-
-        stats = pstats.Stats(profiler)
-        stats.sort_stats('cumulative')
-        stats.print_stats(20)
-
-        return result
-    return wrapper
-
-@app.route('/slow-endpoint')
-@profile
-def slow_endpoint():
-    # Endpoint code
-    return jsonify({"status": "ok"})
-```
-
-### Profile API Endpoint (Node.js/Express)
-
-**Add timing middleware:**
-```javascript
-const app = express();
-
-app.use((req, res, next) => {
-  const start = Date.now();
-
-  res.on('finish', () => {
-    const duration = Date.now() - start;
-    if (duration > 1000) {
-      console.log(`Slow request: ${req.method} ${req.url} - ${duration}ms`);
-    }
-  });
-
-  next();
-});
-```
-
-**Profile specific endpoint:**
-```javascript
-const { performance } = require('perf_hooks');
-
-app.get('/users', async (req, res) => {
-  const start = performance.now();
-
-  const dbStart = performance.now();
-  const users = await db.query('SELECT * FROM users');
-  const dbTime = performance.now() - dbStart;
-
-  const serializationStart = performance.now();
-  const json = JSON.stringify(users);
-  const serializationTime = performance.now() - serializationStart;
-
-  const total = performance.now() - start;
-
-  console.log({
-    total: `${total.toFixed(2)}ms`,
-    db: `${dbTime.toFixed(2)}ms`,
-    serialization: `${serializationTime.toFixed(2)}ms`
-  });
-
-  res.json(users);
-});
-```
-
-### Find N+1 Query Problems
-
-**Problem example:**
-```python
-# BAD: N+1 queries
+# Bad: N+1 queries
 users = User.query.all()  # 1 query
 for user in users:
-    print(user.posts)  # N queries (one per user!)
+    posts = user.posts  # N queries (one per user)
 ```
 
 **Solution:**
 ```python
-# GOOD: 1 query with join
-users = User.query.options(joinedload(User.posts)).all()
+# Good: Eager loading
+users = User.query.options(joinedload(User.posts)).all()  # 1 query
 for user in users:
-    print(user.posts)  # No additional queries
+    posts = user.posts  # No additional queries
 ```
 
-**Detection:**
-```python
-# Django: Enable query logging
-import logging
-logging.basicConfig()
-logging.getLogger('django.db.backends').setLevel(logging.DEBUG)
+### Memory Leak
 
-# SQLAlchemy: Echo queries
-engine = create_engine('postgresql://...', echo=True)
+**Detect:**
+```bash
+# Node.js - Take heap snapshots over time
+node --inspect app.js
+# Chrome DevTools -> Memory -> Take snapshot
+# Compare snapshots to find growing objects
 ```
 
-### Profile Memory Usage
+**Common causes:**
+- Event listeners not removed
+- Closures holding references
+- Global variables accumulating data
+- Cache without eviction policy
 
-**Python:**
-```python
-from memory_profiler import profile
+### Blocking I/O
 
-@profile
-def load_large_dataset():
-    data = []
-    for i in range(1000000):
-        data.append({'id': i, 'value': i * 2})
-    return data
-
-# Run
-python -m memory_profiler script.py
-```
-
-**Output:**
-```
-Line #    Mem usage    Increment   Line Contents
-================================================
-     3   38.6 MiB     38.6 MiB   @profile
-     4                             def load_large_dataset():
-     5   38.6 MiB      0.0 MiB       data = []
-     6  344.3 MiB    305.7 MiB       for i in range(1000000):
-     7  344.3 MiB      0.0 MiB           data.append({'id': i, 'value': i * 2})
-     8  344.3 MiB      0.0 MiB       return data
-```
-
-**Node.js:**
+**Problem:**
 ```javascript
-const { heapUsed } = process.memoryUsage();
-console.log(`Heap used: ${(heapUsed / 1024 / 1024).toFixed(2)} MB`);
-
-// Check for memory leaks
-if (global.gc) {
-  global.gc();
-  const used = process.memoryUsage().heapUsed / 1024 / 1024;
-  console.log(`After GC: ${used.toFixed(2)} MB`);
-}
+// Bad: Blocks event loop
+const data = fs.readFileSync('large-file.txt');
 ```
 
-## Performance Report Format
-
-```markdown
-# Performance Analysis Report
-
-## Summary
-- **Average Response Time**: 450ms (target: < 200ms)
-- **P95 Response Time**: 1,200ms
-- **P99 Response Time**: 2,500ms
-- **Database Time**: 65% of total time
-- **CPU Usage**: 45% average, 85% peak
-- **Memory Usage**: 2.1GB / 4GB (53%)
-
-## Critical Bottlenecks
-
-### 1. Slow Database Query in User List Endpoint
-**Endpoint**: `GET /api/users`
-**Issue**: N+1 query problem loading user posts
-**Impact**: 1,200ms average response time (should be < 200ms)
-
-**Current Code:**
-```python
-users = User.query.all()  # 1 query
-for user in users:
-    posts_count = len(user.posts)  # N queries!
-```
-
-**Query Analysis:**
-- Base query: 15ms
-- N additional queries: 1,185ms (100 users × ~12ms each)
-
-**Recommendation:**
-```python
-# Use eager loading
-users = User.query.options(
-    selectinload(User.posts)
-).all()
-```
-
-**Expected Improvement**: 1,200ms → 50ms (24x faster)
-
----
-
-### 2. Memory Leak in Cache Service
-**Service**: `CacheService`
-**Issue**: Cache entries never evicted, growing unbounded
-**Impact**: Memory grows from 500MB → 3GB over 24 hours
-
-**Problem Code:**
+**Solution:**
 ```javascript
-class CacheService {
-  constructor() {
-    this.cache = new Map();
-  }
-
-  set(key, value) {
-    this.cache.set(key, value);  // Never deleted!
-  }
-}
+// Good: Async I/O
+const data = await fs.promises.readFile('large-file.txt');
 ```
 
-**Recommendation:**
-```javascript
-// Use LRU cache with size limit
-const LRU = require('lru-cache');
+### Inefficient Algorithm
 
-class CacheService {
-  constructor() {
-    this.cache = new LRU({
-      max: 1000,  // Max 1000 items
-      maxAge: 1000 * 60 * 60  // 1 hour TTL
-    });
-  }
-
-  set(key, value) {
-    this.cache.set(key, value);
-  }
-}
+**Problem:**
+```python
+# O(n²) - nested loops
+def has_duplicates(items):
+    for i in range(len(items)):
+        for j in range(i+1, len(items)):
+            if items[i] == items[j]:
+                return True
+    return False
 ```
 
-**Expected Improvement**: Memory stable at ~800MB
+**Solution:**
+```python
+# O(n) - use set
+def has_duplicates(items):
+    return len(items) != len(set(items))
+```
 
----
+## Profiling Checklist
 
-### 3. Missing Database Index
-**Table**: `orders`
-**Column**: `created_at`
-**Issue**: Full table scan on date range queries
+Before profiling:
+- [ ] Reproduce the performance issue
+- [ ] Identify slow endpoint/operation
+- [ ] Check production metrics (if available)
+- [ ] Prepare test data/load
 
-**Query:**
+During profiling:
+- [ ] Profile in realistic environment
+- [ ] Use production-like data volume
+- [ ] Profile multiple times (warm vs cold cache)
+- [ ] Isolate the bottleneck
+
+After profiling:
+- [ ] Identify top 3 bottlenecks
+- [ ] Estimate impact of each fix
+- [ ] Prioritize highest impact optimizations
+- [ ] Document baseline metrics
+- [ ] Verify improvements with profiling
+
+## Interpreting Results
+
+### Flame Graphs
+
+**How to read:**
+- Width = time spent in function
+- Height = call stack depth
+- Look for wide plateaus = bottlenecks
+- Ignore thin spikes unless very tall
+
+### Database EXPLAIN
+
 ```sql
-SELECT * FROM orders WHERE created_at > '2025-01-01';
+EXPLAIN ANALYZE
+SELECT * FROM users WHERE email = 'test@example.com';
 ```
 
-**Execution Plan:**
-```
-Seq Scan on orders  (cost=0.00..15234.00 rows=50000 width=200)
-  Filter: (created_at > '2025-01-01'::date)
-```
+**Look for:**
+- `Seq Scan` on large tables = missing index
+- High `cost` values = expensive operation
+- `Actual time` >> `estimated` = outdated statistics
 
-**Recommendation:**
-```sql
-CREATE INDEX idx_orders_created_at ON orders(created_at);
-```
+### Memory Profiling
 
-**Expected Improvement**: 850ms → 12ms (70x faster)
+**Key metrics:**
+- Heap size growth over time
+- Number of objects created
+- Retained size (objects + references)
+- Garbage collection frequency
 
-## Performance by Endpoint
+**Red flags:**
+- Linear memory growth = leak
+- High GC time (>10%) = too many allocations
+- Large retained heap = inefficient data structures
 
-| Endpoint | Requests | Avg Time | P95 Time | Issues |
-|----------|----------|----------|----------|--------|
-| GET /api/users | 12,450 | 1,200ms | 2,100ms | N+1 queries |
-| POST /api/orders | 3,200 | 450ms | 890ms | Missing index |
-| GET /api/products | 45,600 | 85ms | 120ms | ✅ Good |
+## Optimization Priorities
 
-## Database Query Analysis
+### 1. Database Queries (Highest Impact)
+- Add indexes for frequent queries
+- Fix N+1 queries with eager loading
+- Cache expensive query results
+- Use connection pooling
 
-### Slowest Queries
+### 2. Algorithm Efficiency
+- Replace O(n²) with O(n log n) or O(n)
+- Use appropriate data structures (hash map vs array)
+- Avoid unnecessary computation in loops
 
-1. **User list with posts**
-   - Query time: 1,185ms
-   - Calls: 100 per request
-   - Fix: Eager loading
+### 3. Caching
+- Cache expensive computations
+- Cache external API responses
+- Use CDN for static assets
+- Implement Redis for distributed cache
 
-2. **Order date range**
-   - Query time: 850ms
-   - Calls: 1 per request
-   - Fix: Add index on `created_at`
+### 4. Async/Parallel Processing
+- Use async I/O for network/disk operations
+- Parallelize independent operations
+- Use worker threads/processes for CPU-intensive tasks
 
-3. **Product search**
-   - Query time: 420ms
-   - Calls: 1 per request
-   - Fix: Full-text search index
-
-## Recommendations by Priority
-
-### Critical (Fix Immediately)
-1. Add eager loading for user posts (24x improvement)
-2. Add index on orders.created_at (70x improvement)
-3. Fix memory leak in CacheService
-
-### High (Fix This Week)
-1. Add full-text search index for products
-2. Implement connection pooling (currently creating new connections)
-3. Add caching for frequently accessed data
-
-### Medium (Plan for Next Sprint)
-1. Optimize image processing pipeline
-2. Implement pagination for large result sets
-3. Add database read replicas
-
-## Optimization Checklist
-
-### Immediate Actions
-- [ ] Add database indexes (orders.created_at, products.name)
-- [ ] Fix N+1 query problems (user posts, order items)
-- [ ] Implement LRU cache with TTL
-- [ ] Enable query caching in ORM
-
-### Short-term Actions
-- [ ] Add APM tool (New Relic, DataDog, Elastic APM)
-- [ ] Set up performance budgets in CI/CD
-- [ ] Profile production traffic for 1 week
-- [ ] Implement database connection pooling
-
-### Long-term Actions
-- [ ] Migrate hot data to faster storage
-- [ ] Implement horizontal scaling
-- [ ] Add CDN for static assets
-- [ ] Optimize database schema design
-```
-
-## Instructions
-
-1. **Identify performance issues:**
-   - User reports slow endpoints?
-   - Check application metrics
-   - Review database logs
-   - Profile CPU/memory usage
-
-2. **Profile the application:**
-   - Use appropriate profiling tool
-   - Focus on hot code paths
-   - Measure database query times
-   - Check memory allocations
-
-3. **Analyze bottlenecks:**
-   - Rank by impact (frequency × duration)
-   - Identify root causes
-   - Estimate improvement potential
-
-4. **Create recommendations:**
-   - Specific code changes
-   - Expected performance gains
-   - Implementation difficulty
-   - Testing approach
-
-5. **Write report:**
-   - Summary with key metrics
-   - Critical bottlenecks with fixes
-   - Prioritized action items
-   - Before/after comparisons
+### 5. Memory Optimization
+- Fix memory leaks
+- Use streaming for large data
+- Implement pagination
+- Clean up event listeners
 
 ## Best Practices
 
 ✅ **DO:**
-- Profile in production-like environment
-- Measure before and after changes
-- Focus on biggest bottlenecks first
-- Use APM tools for continuous monitoring
-- Set performance budgets
+- Profile before optimizing (measure, don't guess)
+- Focus on hot paths (80/20 rule)
+- Use production-safe profilers in prod (py-spy, 0x)
+- Profile with realistic data volumes
+- Document baseline before optimizations
+- Re-profile after each optimization
+- Consider trade-offs (memory vs speed)
+- Test edge cases (cold cache, high load)
 
 ❌ **DON'T:**
-- Optimize prematurely
-- Profile in development only
-- Make changes without measuring impact
-- Ignore database performance
-- Optimize without profiling data
+- Optimize without profiling first
+- Micro-optimize code that runs rarely
+- Profile with toy data (profile at scale)
+- Ignore database query performance
+- Profile only in development environment
+- Change multiple things at once
+- Sacrifice readability for negligible gains
+- Forget to measure impact of changes
+
+## Common Profiling Commands
+
+### Python
+
+```bash
+# CPU profiling
+python -m cProfile -s cumulative app.py
+
+# Line-by-line profiling
+pip install line_profiler
+kernprof -l -v script.py
+
+# Memory profiling
+pip install memory_profiler
+python -m memory_profiler script.py
+
+# Production profiling (no overhead)
+pip install py-spy
+py-spy record -o profile.svg --pid 12345
+```
+
+### Node.js
+
+```bash
+# Flame graph
+npm install -g 0x
+0x app.js
+
+# Clinic.js suite
+clinic doctor -- node app.js
+clinic flame -- node app.js
+clinic bubbleprof -- node app.js
+
+# Chrome DevTools
+node --inspect app.js
+# Open chrome://inspect
+```
+
+### Go
+
+```bash
+# CPU profile
+go test -cpuprofile=cpu.prof
+go tool pprof cpu.prof
+
+# Memory profile
+go test -memprofile=mem.prof
+go tool pprof mem.prof
+
+# Benchmark
+go test -bench=. -benchmem
+```
+
+### Database
+
+```sql
+-- PostgreSQL
+EXPLAIN (ANALYZE, BUFFERS) SELECT ...;
+
+-- MySQL
+EXPLAIN FORMAT=JSON SELECT ...;
+
+-- Check slow queries
+SET long_query_time = 1;
+SHOW VARIABLES LIKE 'slow_query%';
+```
+
+## Performance Metrics
+
+### Response Time Targets
+
+- **API endpoints**: < 200ms (p95)
+- **Database queries**: < 50ms
+- **Page load**: < 2s (First Contentful Paint)
+- **Time to Interactive**: < 3.5s
+
+### Resource Usage Targets
+
+- **CPU**: < 70% average
+- **Memory**: No leaks, stable over time
+- **Database connections**: < 50% of pool
+- **Cache hit rate**: > 90%
+
+## Instructions
+
+1. **Identify performance issue**
+   - Slow endpoint, high resource usage, user complaints
+   - Check production metrics/logs
+
+2. **Reproduce locally**
+   - Use production-like data volume
+   - Simulate realistic load
+
+3. **Choose profiling tool**
+   - Python: cProfile or py-spy
+   - Node.js: clinic.js or 0x
+   - Go: pprof
+   - Database: EXPLAIN ANALYZE
+
+4. **Run profiler**
+   - Profile the slow operation
+   - Capture flame graph or profile data
+   - Profile multiple times
+
+5. **Analyze results**
+   - Identify top 3 bottlenecks
+   - Check for N+1 queries, memory leaks
+   - Look for inefficient algorithms
+
+6. **Prioritize fixes**
+   - Estimate impact (time saved)
+   - Start with database/algorithms
+   - Quick wins first
+
+7. **Optimize**
+   - Make one change at a time
+   - Test after each change
+   - Re-profile to verify improvement
+
+8. **Document**
+   - Baseline metrics
+   - Changes made
+   - Performance improvement
+   - Any trade-offs
 
 ## Constraints
 
-- Profile with realistic data volumes
-- Don't profile in production without safety measures
-- Measure impact before claiming improvement
-- Test optimizations thoroughly
-- Document all performance changes
+- Must profile before optimizing (measure, don't guess)
+- Must use production-safe profilers in production (py-spy, not cProfile)
+- Must test with realistic data volumes (not toy data)
+- Must document baseline metrics before changes
+- Must re-profile after optimizations to verify improvement
+- Must consider trade-offs (memory vs CPU, complexity vs performance)
+- Should focus on hot paths (highest impact optimizations first)
+- Should fix N+1 queries before micro-optimizations
+- Must not sacrifice correctness for performance
+- Must profile under realistic load conditions

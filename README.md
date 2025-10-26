@@ -233,6 +233,12 @@ Each agent:
 
 Skills are invoked by agents when needed (you don't call them directly).
 
+**✨ Recently Optimized:** All 34 skills follow Claude Code best practices:
+- Under 500 lines for optimal performance
+- Progressive disclosure with examples/ directories for detailed content
+- Enhanced descriptions for better auto-discovery
+- ~4,000+ lines optimized without losing any functionality
+
 ### Commands
 
 Seven slash commands orchestrate the workflow:

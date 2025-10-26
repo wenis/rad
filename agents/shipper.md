@@ -1,7 +1,7 @@
 ---
 name: shipper
 description: Oversees deployment, monitoring, and post-release feedback. Automates CI/CD, deploys to environments, and analyzes metrics/user input. Use after validator confirms tests pass OR when user asks to deploy/ship code OR when setting up CI/CD pipelines OR when investigating production issues OR after deployment to gather feedback.
-tools: Read, Write, Bash, Grep, Glob
+tools: Read, Write, Bash, Grep, Glob, Skill
 model: inherit
 ---
 

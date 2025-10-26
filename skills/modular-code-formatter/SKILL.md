@@ -1,6 +1,6 @@
 ---
 name: modular-code-formatter
-description: Formats and refactors code for consistency, modularity, and best practices across Python, JavaScript, TypeScript, and Go. Use when code needs cleanup OR after rapid prototyping OR when enforcing code standards OR before code review.
+description: Formats and refactors code using Prettier, Black, ESLint, or gofmt for consistency and best practices. Implements modular patterns (DRY, SOLID), extracts functions from long methods, removes code smells, standardizes naming conventions, and adds type hints/JSDoc. Supports Python, JavaScript, TypeScript, and Go. Use when cleaning up prototype code, enforcing code standards, preparing for code review, refactoring legacy code, or improving code maintainability.
 allowed-tools: Read, Edit, Write, Bash
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: pr-description-generator
-description: Generates comprehensive pull request descriptions by analyzing git diff, commit history, and code changes. Creates structured PR descriptions with summary, testing info, and checklists.
+description: Generates comprehensive GitHub/GitLab PR descriptions by analyzing git diff, commit messages, and code changes. Creates structured descriptions with summary of changes, testing plan, deployment notes, breaking changes, related issues, and reviewer checklists. Follows PR templates and includes screenshots for UI changes. Use when creating pull requests, documenting complex changes, ensuring thorough code reviews, standardizing PR format, or preparing for deployment approvals.
 allowed-tools: Read, Grep, Bash
 ---
 

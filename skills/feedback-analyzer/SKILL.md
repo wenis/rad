@@ -1,6 +1,6 @@
 ---
 name: feedback-analyzer
-description: Analyzes deployment logs, application metrics, error tracking, and user feedback to identify patterns and actionable insights. Use when reviewing production logs OR analyzing user feedback OR investigating post-deployment issues OR generating iteration reports.
+description: Analyzes deployment logs, application metrics (Grafana), error tracking (Sentry), and user feedback to identify patterns, common errors, performance regressions, and actionable insights. Generates reports with error frequency, affected users, root causes, and recommended fixes. Tracks trends over time and correlates issues with deployments. Use when reviewing production logs, analyzing user feedback/support tickets, investigating post-deployment issues, generating iteration reports, or identifying technical debt priorities.
 allowed-tools: Read, Grep, Glob, Bash, Write
 ---
 

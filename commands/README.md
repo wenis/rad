@@ -2,20 +2,63 @@
 
 This document explains how to write effective slash commands that properly delegate to agents without bypassing their autonomy.
 
+---
+
+## 🚨 CRITICAL WARNING: Minimal Prompts Required
+
+**If you're experiencing issues with parallel builds not working, READ THIS:**
+
+The RAD system uses **command-level routing** to determine which agent to invoke:
+- **Parallel strategy** → Command invokes **orchestrator agent** (coordinates multiple builders)
+- **Sequential strategy** → Command invokes **builder agent** (builds directly)
+
+**The command reads the spec to detect the strategy, then routes to the appropriate agent.**
+
+**✅ CORRECT approach:**
+```
+1. Command reads spec file
+2. Command finds "Execution Strategy: Parallel" in spec
+3. Command invokes orchestrator with: "Orchestrate the build for docs/specs/feature.md"
+4. Orchestrator spawns multiple builders, coordinates validation, handles integration
+```
+
+**❌ WRONG approach:**
+```
+1. Command ignores spec strategy
+2. Command invokes builder with detailed instructions
+3. Builder tries to do everything itself
+4. Result: Sequential build when parallel was intended
+```
+
+**Key principles:**
+- **Commands are smart:** They read specs and route to appropriate agents
+- **Agents are focused:** Builder builds, orchestrator orchestrates
+- **Prompts are minimal:** < 20 words, no detailed instructions
+
+**If parallel builds aren't working:**
+1. Check that command is reading the spec
+2. Verify command is routing to orchestrator (not builder) for parallel specs
+3. Ensure agent prompts are minimal
+
+---
+
 ## Core Principle: Minimal Prompts
 
 **Golden Rule:** Commands should invoke agents with **minimal, non-prescriptive prompts** that allow agents to use their own decision-making logic.
 
 ### Why This Matters
 
-Agents have sophisticated built-in logic for:
-- **Mode detection** (builder: orchestration vs direct build vs module vs integration)
-- **Strategy selection** (planner: complexity assessment, execution strategy)
-- **Quality gates** (validator: what tests to run, coverage requirements)
-- **Deployment decisions** (shipper: staging vs production, rollback triggers)
+The RAD system separates concerns:
+- **Commands:** Read specs, route to appropriate agents
+- **Orchestrator:** Coordinates parallel builds (spawns builders, validators, integration)
+- **Builder:** Implements features (writes code, fixes issues)
+- **Validator:** Tests features (runs tests, reports issues)
+- **Planner:** Creates specs (designs features, defines build strategies)
+- **Shipper:** Deploys features (staging, production, monitoring)
 
-When commands generate overly prescriptive prompts, they **bypass** this agent logic, leading to:
-- ❌ Agents not following their own documented behavior
+When commands generate overly prescriptive prompts, they **bypass** this architecture, leading to:
+- ❌ Wrong agent invoked (builder instead of orchestrator)
+- ❌ Agents receiving detailed instructions instead of spec paths
 - ❌ Parallel builds becoming sequential
 - ❌ Loss of agent autonomy and intelligence
 - ❌ Inconsistent behavior across commands

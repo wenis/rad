@@ -1,6 +1,6 @@
 ---
 name: integration-conflict-detector
-description: Detects conflicts between parallel-built modules before integration phase. Checks for type mismatches, API incompatibilities, breaking changes, and overlapping responsibilities. Use after module validators pass OR before integration builder starts OR when troubleshooting integration failures.
+description: Detects conflicts between parallel-built modules before integration by comparing interfaces, type definitions, API contracts, and module boundaries. Identifies type mismatches, API incompatibilities, breaking changes, overlapping responsibilities, and conflicting global state. Generates conflict reports with specific issues and suggested resolutions. Use after module validators pass, before integration builder starts, when troubleshooting integration failures, or preventing merge conflicts in parallel development.
 allowed-tools: Read, Grep, Glob, Write
 ---
 

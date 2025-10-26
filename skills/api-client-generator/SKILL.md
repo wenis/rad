@@ -1,6 +1,6 @@
 ---
 name: api-client-generator
-description: Generates typed API client code from OpenAPI/Swagger specs, GraphQL schemas, or example API requests. Use when integrating external APIs OR creating API clients OR working with API documentation OR building SDK wrappers.
+description: Generates typed API client libraries from OpenAPI/Swagger specs, GraphQL schemas (using GraphQL Code Generator), or example API requests. Creates TypeScript/Python/Go clients with methods for each endpoint, request/response types, authentication handling (Bearer, OAuth2), error types, and retry logic. Supports REST and GraphQL APIs. Use when integrating external APIs (Stripe, GitHub, AWS), creating internal API clients, building SDK wrappers for public APIs, or generating type-safe API consumers.
 allowed-tools: Read, Write, WebFetch, Bash
 ---
 

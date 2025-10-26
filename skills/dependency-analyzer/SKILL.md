@@ -1,6 +1,6 @@
 ---
 name: dependency-analyzer
-description: Analyzes code dependencies to identify which modules can be built in parallel vs sequentially. Use when planner creates build plans OR when determining module boundaries OR when optimizing parallel execution strategy OR when assessing feature complexity.
+description: Analyzes code dependencies (imports, function calls, data flows) to create dependency graphs and determine which modules can be built in parallel vs sequentially. Identifies circular dependencies, calculates critical paths, detects tight coupling, and suggests module boundaries for parallel development. Generates visualization of module relationships. Use when planner creates build plans, determining module breakdown, optimizing parallel execution strategy, assessing feature complexity, identifying refactoring opportunities, or detecting architectural issues.
 allowed-tools: Read, Grep, Glob, Bash
 ---
 

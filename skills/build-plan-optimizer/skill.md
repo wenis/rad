@@ -1,6 +1,6 @@
 ---
 name: build-plan-optimizer
-description: Uses historical data and heuristics to suggest optimal module breakdowns and build strategies. Learns from past builds to improve parallel execution plans. Use when planner creates build plans OR analyzing build performance OR improving future build strategies.
+description: Uses historical build data, success rates, and performance metrics to suggest optimal module breakdowns and parallel execution strategies. Analyzes past builds to identify patterns (which modules integrate well, which cause conflicts, optimal parallelization levels). Learns from feedback to improve future build plans. Recommends module granularity, parallelization degree, and build order. Use when planner creates build plans, analyzing build performance, improving future build strategies, or optimizing parallel execution based on historical data.
 allowed-tools: Read, Write, Grep, Glob
 ---
 

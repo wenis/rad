@@ -44,47 +44,75 @@ The builder-validator feedback loop runs automatically (max 3 iterations).
 
 ### Phase 2: Implementation
 
-4. **Invoke the builder agent with minimal prompt:**
+4. **Route to appropriate agent based on build strategy:**
 
-   **CRITICAL:** Use a minimal prompt that allows the builder to perform its own mode detection. DO NOT tell the builder what mode to use or how to implement.
+   **Read the spec to determine which agent to invoke:**
 
-   **Correct invocation (for ALL builds):**
-   ```
-   Read the spec at docs/specs/[feature-name].md and implement the feature.
-   ```
+   a. Read `docs/specs/[feature-name].md`
+   b. Find the "Build Plan" or "Execution Strategy" section
+   c. Check the strategy:
+      - If "Parallel: N modules in M phases" → Invoke **orchestrator** (Step 5a)
+      - If "Sequential: Single builder" → Invoke **builder** (Step 5b)
+      - If unclear → Default to builder (Step 5b)
 
-   **DO NOT add any of these:**
-   - ❌ "Mode: Orchestration" or "Mode: Direct Build" (builder detects this)
-   - ❌ "You MUST orchestrate..." (bypasses builder's logic)
-   - ❌ "Build modules A, B, C..." (too prescriptive)
-   - ❌ "DO NOT build everything yourself..." (builder knows this)
+5a. **If Parallel Strategy - Invoke Orchestrator:**
 
-5. **Watch for builder's mode announcement:**
-   - Builder will announce: "📋 BUILD PLAN DETECTED"
-   - Builder will state: "Strategy: Sequential" or "Strategy: Parallel (N modules in M phases)"
-   - Builder will state: "Mode: Direct Build" or "Mode: Orchestration"
-   - **If builder doesn't announce within 30 seconds:** Something is wrong, stop and investigate
+    **Use this EXACT minimal prompt:**
+    ```
+    Orchestrate the build for docs/specs/[feature-name].md
+    ```
 
-6. **Verify orchestration (for parallel builds only):**
-   - If builder announces "Mode: Orchestration", watch for:
-     - "Spawning X parallel builders for Phase 1..."
-     - Multiple Task tool calls in a single message
-   - If builder uses Write/Edit tools instead of Task tool:
-     - **STOP** - Builder failed to enter orchestration mode
-     - Investigate why (likely a prompt issue)
+    **That's it. Nothing else.**
 
-7. **Review the code with user if needed**
+    The orchestrator will:
+    - Parse the build plan
+    - Spawn multiple builder agents in parallel
+    - Monitor their progress
+    - Coordinate validation loops
+    - Handle integration
+    - Report final status
+
+    **Skip to step 6** (orchestrator handles everything)
+
+5b. **If Sequential Strategy - Invoke Builder:**
+
+    **Use this EXACT minimal prompt:**
+    ```
+    Read the spec at docs/specs/[feature-name].md and implement the feature.
+    ```
+
+    **That's it. Nothing else.**
+
+    The builder will:
+    - Read the spec
+    - Implement the feature
+    - Run basic smoke tests
+    - Report what was built
+
+    **Continue to step 6**
+
+**🚨 ENFORCEMENT CHECKLIST - Before Invoking Agent:**
+- [ ] Prompt is < 20 words
+- [ ] Prompt is EITHER: "Orchestrate..." OR "Read the spec...and implement..."
+- [ ] NO additional context, guidelines, or instructions
+- [ ] NO preambles, requirements, or numbered steps
+
+**If your prompt fails ANY check, DELETE IT and use the exact template above.**
+
+6. **Review the code/status with user if needed**
 
 ### Phase 3: Testing & Validation (with Feedback Loop)
 
-8. Invoke the **validator** agent to:
+7. Invoke the **validator** agent to:
    - Generate comprehensive tests based on the spec
    - Run all tests (unit, integration, edge cases)
    - Check for security issues
    - Verify acceptance criteria are met
    - Create validation report at `docs/validation/[feature-name]-report.md`
 
-9. **Validation Feedback Loop** (max 3 iterations):
+8. **Validation Feedback Loop** (max 3 iterations):
+
+   **Note:** For parallel builds, the orchestrator handles validation loops for each module. For sequential builds, you manage the feedback loop.
 
    **Iteration 1:**
    - If validation passes → proceed to Phase 4
@@ -115,15 +143,15 @@ The builder-validator feedback loop runs automatically (max 3 iterations).
        - Option B: Revisit spec (may be too ambitious)
        - Option C: Accept current state and document known issues
 
-10. Only proceed to deployment if validation passes
+9. Only proceed to deployment if validation passes
 
 ### Phase 4: Deployment
 
-11. Ask user if they want to deploy:
-    - If yes, continue to step 12
+10. Ask user if they want to deploy:
+    - If yes, continue to step 11
     - If no, end workflow and provide summary
 
-12. Invoke the **shipper** agent to:
+11. Invoke the **shipper** agent to:
     - Verify all tests are passing
     - Set up CI/CD if needed
     - Deploy to staging first
@@ -132,7 +160,7 @@ The builder-validator feedback loop runs automatically (max 3 iterations).
     - Monitor initial metrics
     - Create deployment report
 
-13. After deployment, invoke **shipper** again to:
+12. After deployment, invoke **shipper** again to:
     - Analyze post-deployment feedback
     - Generate insights report
     - Identify any issues or improvements
@@ -140,7 +168,7 @@ The builder-validator feedback loop runs automatically (max 3 iterations).
 
 ### Phase 5: Iteration Planning
 
-14. Provide complete summary to user:
+13. Provide complete summary to user:
     - What was built
     - Test results
     - Deployment status

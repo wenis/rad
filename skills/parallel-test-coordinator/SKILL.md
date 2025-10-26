@@ -1,6 +1,6 @@
 ---
 name: parallel-test-coordinator
-description: Coordinates parallel test execution across multiple modules, aggregates results in real-time, and optimizes test run order. Use when running tests for parallel modules OR when validator needs to test multiple components simultaneously OR when optimizing test execution speed.
+description: Coordinates parallel test execution across multiple modules using pytest-xdist, Jest --maxWorkers, or Go test -parallel. Aggregates test results in real-time, detects flaky tests, optimizes test run order based on failure history, and provides unified test reporting. Maximizes CPU utilization while avoiding resource conflicts. Use when running tests for parallel modules, when validator needs to test multiple components simultaneously, optimizing test execution speed, or reducing CI/CD test time.
 allowed-tools: Bash, Read, Write
 ---
 

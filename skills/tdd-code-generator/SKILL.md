@@ -1,6 +1,6 @@
 ---
 name: tdd-code-generator
-description: Generates code using strict TDD methodology - write failing tests first, implement minimal passing code, then refactor. Use when user explicitly requests TDD approach OR when building critical/security-sensitive features OR when spec requires test-driven development.
+description: Generates code using strict Test-Driven Development (TDD) - writes failing tests first (Red), implements minimal passing code (Green), then refactors (Refactor). Creates pytest/Jest/Go test files before implementation, follows AAA pattern (Arrange-Act-Assert), ensures 100% test coverage. Use when user explicitly requests TDD, building critical/security-sensitive features, developing complex algorithms, or when specifications require test-first development.
 allowed-tools: Read, Edit, Write, Bash
 ---
 

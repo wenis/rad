@@ -1,6 +1,6 @@
 ---
 name: ci-cd-pipeline-builder
-description: Creates CI/CD pipelines for GitHub Actions, GitLab CI, or CircleCI with quality gates, automated testing, security scanning, and deployment strategies. Use when setting up new projects OR improving deployment automation OR implementing quality gates.
+description: Creates complete CI/CD pipelines for GitHub Actions, GitLab CI, CircleCI, or Jenkins with automated testing, code quality gates (linting, type checking), security scanning (Snyk, Trivy), Docker builds, and multi-environment deployments (dev/staging/prod). Generates workflow YAML files with caching, parallelization, and deployment strategies. Use when setting up new projects, automating deployments, implementing quality gates, adding security scans, containerizing applications, or setting up monorepo pipelines.
 allowed-tools: Read, Write, Edit, Bash
 ---
 
@@ -9,36 +9,53 @@ allowed-tools: Read, Write, Edit, Bash
 You build comprehensive CI/CD pipelines with automated testing, quality gates, security scanning, and safe deployment strategies.
 
 ## When to use
-- Setting up a new project
+- Setting up a new project's CI/CD
 - Migrating from manual deployments
-- Implementing quality gates
-- Adding automated security scanning
-- Setting up multi-environment deployments
-- Improving deployment safety
+- Implementing automated quality gates
+- Adding security scanning to pipelines
+- Setting up multi-environment deployments (staging, production)
+- Improving deployment safety and reliability
+- Adding automated rollback capabilities
 
 ## Pipeline Stages
 
+A good CI/CD pipeline has these stages:
+
 ### 1. Build
-Compile/build code, install dependencies.
+- Install dependencies
+- Compile/transpile code
+- Generate assets
 
 ### 2. Test
-Run unit, integration, and e2e tests.
+- Run unit tests
+- Run integration tests
+- Run end-to-end tests
+- Generate coverage reports
 
 ### 3. Quality Gates
-Linting, type checking, coverage, security scanning.
+- Linting (code style)
+- Type checking
+- Code coverage threshold
+- Security scanning
+- Dependency vulnerability checks
 
 ### 4. Build Artifacts
-Create Docker images, build packages.
+- Create Docker images
+- Build deployment packages
+- Tag with version/commit SHA
 
 ### 5. Deploy
-Deploy to staging/production with health checks.
+- Deploy to staging (automatic)
+- Deploy to production (manual approval or automated)
+- Health checks after deployment
+- Smoke tests
 
 ### 6. Post-Deploy
-Smoke tests, notifications.
+- Run smoke tests
+- Send notifications
+- Monitor metrics
 
-## GitHub Actions (Recommended)
-
-### Basic Pipeline
+## Basic GitHub Actions Pipeline
 
 ```yaml
 # .github/workflows/ci.yml
@@ -50,41 +67,16 @@ on:
   pull_request:
     branches: [main]
 
-env:
-  NODE_VERSION: '18'
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
-
 jobs:
   test:
     runs-on: ubuntu-latest
-
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: test_db
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
-
-      redis:
-        image: redis:7-alpine
-        ports:
-          - 6379:6379
-
     steps:
       - uses: actions/checkout@v3
 
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version: '18'
           cache: 'npm'
 
       - name: Install dependencies
@@ -96,62 +88,24 @@ jobs:
       - name: Type check
         run: npm run typecheck
 
-      - name: Run unit tests
-        run: npm run test:unit
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
-          REDIS_URL: redis://localhost:6379
+      - name: Run tests
+        run: npm test
 
-      - name: Run integration tests
-        run: npm run test:integration
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
-          REDIS_URL: redis://localhost:6379
-
-      - name: Generate coverage report
+      - name: Check coverage
         run: npm run test:coverage
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
-        with:
-          files: ./coverage/coverage-final.json
-          fail_ci_if_error: true
-
-      - name: Check coverage threshold
-        run: |
-          COVERAGE=$(node -e "console.log(require('./coverage/coverage-summary.json').total.lines.pct)")
-          if (( $(echo "$COVERAGE < 80" | bc -l) )); then
-            echo "Coverage $COVERAGE% is below 80%"
-            exit 1
-          fi
 
   security:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
 
-      - name: Run npm audit
+      - name: Run security audit
         run: npm audit --audit-level=high
 
-      - name: Run Snyk security scan
+      - name: Scan vulnerabilities
         uses: snyk/actions/node@master
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        with:
-          args: --severity-threshold=high
-
-      - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
-        with:
-          scan-type: 'fs'
-          scan-ref: '.'
-          format: 'sarif'
-          output: 'trivy-results.sarif'
-
-      - name: Upload Trivy results to GitHub Security
-        uses: github/codeql-action/upload-sarif@v2
-        with:
-          sarif_file: 'trivy-results.sarif'
 
   build:
     needs: [test, security]
@@ -161,599 +115,310 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+      - name: Build Docker image
+        run: docker build -t myapp:${{ github.sha }} .
 
-      - name: Log in to Container Registry
-        uses: docker/login-action@v2
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Push to registry
+        run: docker push myapp:${{ github.sha }}
 
-      - name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v4
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: |
-            type=ref,event=branch
-            type=ref,event=pr
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=sha
-
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v4
-        with:
-          context: .
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-  deploy-staging:
+  deploy:
     needs: build
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
-    environment:
-      name: staging
-      url: https://staging.example.com
+    environment: production
 
     steps:
-      - uses: actions/checkout@v3
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v2
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
-
-      - name: Deploy to ECS
-        run: |
-          aws ecs update-service \
-            --cluster staging \
-            --service api \
-            --force-new-deployment
-
-      - name: Wait for deployment
-        run: |
-          aws ecs wait services-stable \
-            --cluster staging \
-            --services api
-
-      - name: Run smoke tests
-        run: |
-          curl -f https://staging.example.com/health || exit 1
-
-      - name: Notify Slack
-        uses: slackapi/slack-github-action@v1
-        with:
-          payload: |
-            {
-              "text": "Deployed to staging: ${{ github.sha }}"
-            }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-
-  deploy-production:
-    needs: deploy-staging
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-    environment:
-      name: production
-      url: https://example.com
-
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v2
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
-
-      - name: Deploy to production (blue-green)
-        run: |
-          # Update task definition with new image
-          TASK_DEF=$(aws ecs describe-task-definition --task-definition api --query taskDefinition)
-          NEW_TASK_DEF=$(echo $TASK_DEF | jq --arg IMAGE "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}" '.containerDefinitions[0].image = $IMAGE')
-
-          # Register new task definition
-          aws ecs register-task-definition --cli-input-json "$NEW_TASK_DEF"
-
-          # Update service
-          aws ecs update-service \
-            --cluster production \
-            --service api \
-            --task-definition api
-
-      - name: Monitor deployment
-        run: |
-          for i in {1..30}; do
-            ERROR_RATE=$(curl -s https://api.example.com/metrics | grep error_rate | awk '{print $2}')
-            if (( $(echo "$ERROR_RATE > 0.05" | bc -l) )); then
-              echo "Error rate too high: $ERROR_RATE"
-              exit 1
-            fi
-            sleep 10
-          done
-
-      - name: Notify team
-        uses: slackapi/slack-github-action@v1
-        with:
-          payload: |
-            {
-              "text": "✅ Deployed to production: ${{ github.sha }}\nURL: https://example.com"
-            }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      - name: Deploy to production
+        run: ./deploy.sh ${{ github.sha }}
 ```
 
-### Matrix Testing (Multiple Versions)
+**Key concepts:**
+- `needs:` creates dependencies between jobs
+- `if:` conditionally runs jobs
+- `environment:` adds manual approval gates
+- Jobs run in parallel unless `needs` is specified
+
+## Platform-Specific Guides
+
+For detailed platform implementations, see:
+
+### CI/CD Platforms
+- **GitHub Actions:** `examples/github-actions.md`
+  - Complete workflow examples
+  - Matrix builds
+  - Reusable workflows
+  - GitHub Container Registry
+  - Deployment environments
+
+- **GitLab CI:** `examples/gitlab-ci.md`
+  - .gitlab-ci.yml structure
+  - Stages and jobs
+  - GitLab Runner setup
+  - Container Registry
+  - Auto DevOps
+
+- **CircleCI:** `examples/circleci.md`
+  - config.yml structure
+  - Workflows and jobs
+  - Docker executor
+  - Caching strategies
+
+### Advanced Topics
+- **Quality Gates:** `examples/quality-gates.md`
+  - Code coverage enforcement
+  - Linting and formatting
+  - Security scanning tools
+  - Performance budgets
+
+- **Deployment Strategies:** `examples/deployment-strategies.md`
+  - Blue-green deployments
+  - Canary deployments
+  - Rolling updates
+  - Feature flags
+
+- **Rollback:** `examples/rollback.md`
+  - Automatic rollback triggers
+  - Manual rollback procedures
+  - Database migration rollback
+
+### Templates
+- **GitHub Actions:** `templates/github-workflow.yml`
+- **GitLab CI:** `templates/gitlab-ci.yml`
+- **CircleCI:** `templates/circleci-config.yml`
+
+## Instructions
+
+When building a CI/CD pipeline:
+
+1. **Choose platform:**
+   - GitHub Actions (if using GitHub)
+   - GitLab CI (if using GitLab)
+   - CircleCI (for flexible cloud CI)
+
+2. **Define stages:**
+   - Start with: test → build → deploy
+   - Add quality gates
+   - Add security scanning
+   - Add deployment approvals
+
+3. **Implement quality gates:**
+   - Linting must pass
+   - Type checking must pass
+   - Tests must pass
+   - Coverage must meet threshold (e.g., 80%)
+   - Security scans must pass
+
+4. **Add security scanning:**
+   - Dependency vulnerability scanning (npm audit, Snyk)
+   - Container scanning (Trivy, Grype)
+   - SAST scanning (CodeQL, SonarQube)
+   - Secret scanning
+
+5. **Configure deployments:**
+   - Staging: automatic on main branch
+   - Production: manual approval or tag-based
+   - Health checks after deploy
+   - Automatic rollback on failure
+
+6. **Add notifications:**
+   - Slack/Discord on failures
+   - Email on deployment
+   - GitHub commit status
+
+7. **Optimize for speed:**
+   - Cache dependencies
+   - Run jobs in parallel
+   - Use matrix builds for multi-platform
+   - Skip redundant steps
+
+## Common Patterns
+
+### Multi-Environment Deployment
 
 ```yaml
-jobs:
-  test:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-        node-version: [16, 18, 20]
-        exclude:
-          - os: macos-latest
-            node-version: 16
+deploy-staging:
+  if: github.ref == 'refs/heads/develop'
+  steps:
+    - name: Deploy to staging
+      run: ./deploy.sh staging
 
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Setup Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v3
-        with:
-          node-version: ${{ matrix.node-version }}
-
-      - run: npm test
+deploy-production:
+  if: github.ref == 'refs/heads/main'
+  environment: production  # Requires manual approval
+  steps:
+    - name: Deploy to production
+      run: ./deploy.sh production
 ```
 
-### Monorepo with Changed Files Detection
+### Matrix Builds
 
 ```yaml
-jobs:
-  changes:
-    runs-on: ubuntu-latest
-    outputs:
-      api: ${{ steps.filter.outputs.api }}
-      web: ${{ steps.filter.outputs.web }}
-    steps:
-      - uses: actions/checkout@v3
-      - uses: dorny/paths-filter@v2
-        id: filter
-        with:
-          filters: |
-            api:
-              - 'packages/api/**'
-            web:
-              - 'packages/web/**'
-
-  test-api:
-    needs: changes
-    if: needs.changes.outputs.api == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - run: npm test --workspace=api
-
-  test-web:
-    needs: changes
-    if: needs.changes.outputs.web == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - run: npm test --workspace=web
+test:
+  strategy:
+    matrix:
+      node-version: [16, 18, 20]
+      os: [ubuntu-latest, macos-latest]
+  runs-on: ${{ matrix.os }}
+  steps:
+    - uses: actions/setup-node@v3
+      with:
+        node-version: ${{ matrix.node-version }}
 ```
 
-## GitLab CI
+### Caching Dependencies
 
 ```yaml
-# .gitlab-ci.yml
-stages:
-  - test
-  - build
-  - deploy
-
-variables:
-  NODE_VERSION: "18"
-  DOCKER_DRIVER: overlay2
-
-# Template for Node.js setup
-.node-template: &node-template
-  image: node:${NODE_VERSION}
-  cache:
-    paths:
-      - node_modules/
-  before_script:
-    - npm ci
-
-test:unit:
-  <<: *node-template
-  stage: test
-  services:
-    - postgres:15
-    - redis:7-alpine
-  variables:
-    POSTGRES_DB: test_db
-    POSTGRES_USER: postgres
-    POSTGRES_PASSWORD: postgres
-    DATABASE_URL: postgresql://postgres:postgres@postgres:5432/test_db
-    REDIS_URL: redis://redis:6379
-  script:
-    - npm run test:unit
-    - npm run test:integration
-  coverage: '/All files\s+\|\s+([\d\.]+)/'
-  artifacts:
-    reports:
-      coverage_report:
-        coverage_format: cobertura
-        path: coverage/cobertura-coverage.xml
-
-test:lint:
-  <<: *node-template
-  stage: test
-  script:
-    - npm run lint
-    - npm run typecheck
-
-security:scan:
-  stage: test
-  image: aquasec/trivy:latest
-  script:
-    - trivy fs --exit-code 1 --severity HIGH,CRITICAL .
-
-build:docker:
-  stage: build
-  image: docker:latest
-  services:
-    - docker:dind
-  before_script:
-    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-  script:
-    - docker build -t $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA .
-    - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
-    - docker tag $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA $CI_REGISTRY_IMAGE:latest
-    - docker push $CI_REGISTRY_IMAGE:latest
-  only:
-    - main
-
-deploy:staging:
-  stage: deploy
-  image: alpine:latest
-  before_script:
-    - apk add --no-cache curl
-  script:
-    - curl -X POST $DEPLOY_WEBHOOK_STAGING
-    - sleep 30
-    - curl -f https://staging.example.com/health || exit 1
-  environment:
-    name: staging
-    url: https://staging.example.com
-  only:
-    - main
-
-deploy:production:
-  stage: deploy
-  image: alpine:latest
-  before_script:
-    - apk add --no-cache curl
-  script:
-    - curl -X POST $DEPLOY_WEBHOOK_PRODUCTION
-    - sleep 30
-    - curl -f https://example.com/health || exit 1
-  environment:
-    name: production
-    url: https://example.com
-  when: manual
-  only:
-    - main
+- name: Cache dependencies
+  uses: actions/cache@v3
+  with:
+    path: ~/.npm
+    key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+    restore-keys: |
+      ${{ runner.os }}-node-
 ```
 
-## CircleCI
+### Coverage Threshold
 
-```yaml
-# .circleci/config.yml
-version: 2.1
-
-orbs:
-  node: circleci/node@5.0
-  docker: circleci/docker@2.0
-  aws-ecs: circleci/aws-ecs@3.0
-
-executors:
-  node-executor:
-    docker:
-      - image: cimg/node:18.17
-        environment:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
-          REDIS_URL: redis://localhost:6379
-      - image: postgres:15
-        environment:
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: test_db
-      - image: redis:7-alpine
-
-jobs:
-  test:
-    executor: node-executor
-    steps:
-      - checkout
-      - node/install-packages
-      - run:
-          name: Run linter
-          command: npm run lint
-      - run:
-          name: Run type check
-          command: npm run typecheck
-      - run:
-          name: Run tests
-          command: npm test
-      - run:
-          name: Check coverage
-          command: |
-            COVERAGE=$(node -e "console.log(require('./coverage/coverage-summary.json').total.lines.pct)")
-            if (( $(echo "$COVERAGE < 80" | bc -l) )); then
-              echo "Coverage $COVERAGE% is below 80%"
-              exit 1
-            fi
-      - store_test_results:
-          path: ./test-results
-      - store_artifacts:
-          path: ./coverage
-
-  security:
-    docker:
-      - image: cimg/node:18.17
-    steps:
-      - checkout
-      - run:
-          name: Run npm audit
-          command: npm audit --audit-level=high
-      - run:
-          name: Run Snyk
-          command: |
-            npm install -g snyk
-            snyk test --severity-threshold=high
-
-  build:
-    executor: docker/docker
-    steps:
-      - checkout
-      - setup_remote_docker
-      - docker/check
-      - docker/build:
-          image: myorg/myapp
-          tag: ${CIRCLE_SHA1}
-      - docker/push:
-          image: myorg/myapp
-          tag: ${CIRCLE_SHA1}
-
-  deploy-staging:
-    executor: aws-ecs/default
-    steps:
-      - aws-ecs/update-service:
-          cluster: staging
-          service-name: api
-          force-new-deployment: true
-      - run:
-          name: Smoke test
-          command: curl -f https://staging.example.com/health || exit 1
-
-  deploy-production:
-    executor: aws-ecs/default
-    steps:
-      - aws-ecs/update-service:
-          cluster: production
-          service-name: api
-          force-new-deployment: true
-      - run:
-          name: Health check
-          command: curl -f https://example.com/health || exit 1
-
-workflows:
-  build-test-deploy:
-    jobs:
-      - test
-      - security
-      - build:
-          requires:
-            - test
-            - security
-          filters:
-            branches:
-              only: main
-      - deploy-staging:
-          requires:
-            - build
-      - hold-production:
-          type: approval
-          requires:
-            - deploy-staging
-      - deploy-production:
-          requires:
-            - hold-production
-```
-
-## Quality Gates
-
-### Code Coverage
 ```yaml
 - name: Check coverage threshold
   run: |
-    COVERAGE=$(jq '.total.lines.pct' coverage/coverage-summary.json)
+    COVERAGE=$(node -e "console.log(require('./coverage/coverage-summary.json').total.lines.pct)")
     if (( $(echo "$COVERAGE < 80" | bc -l) )); then
-      echo "::error::Coverage ${COVERAGE}% is below 80%"
+      echo "Coverage $COVERAGE% is below 80%"
       exit 1
     fi
-```
-
-### Dependency Vulnerabilities
-```yaml
-- name: Audit dependencies
-  run: npm audit --audit-level=moderate
-```
-
-### Code Quality (SonarQube)
-```yaml
-- name: SonarQube Scan
-  uses: sonarsource/sonarqube-scan-action@master
-  env:
-    SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-    SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-```
-
-### Bundle Size
-```yaml
-- name: Check bundle size
-  run: |
-    SIZE=$(du -sk dist | cut -f1)
-    if [ $SIZE -gt 1000 ]; then
-      echo "::error::Bundle size ${SIZE}KB exceeds 1MB"
-      exit 1
-    fi
-```
-
-## Deployment Strategies
-
-### Blue-Green Deployment
-```yaml
-- name: Blue-Green Deploy
-  run: |
-    # Deploy to green environment
-    aws ecs update-service --cluster prod --service api-green --force-new-deployment
-
-    # Wait for healthy
-    aws ecs wait services-stable --cluster prod --services api-green
-
-    # Switch traffic
-    aws elbv2 modify-rule --rule-arn $RULE_ARN --actions TargetGroupArn=api-green
-
-    # Monitor for 5 minutes
-    sleep 300
-
-    # If successful, decommission blue
-    aws ecs update-service --cluster prod --service api-blue --desired-count 0
-```
-
-### Canary Deployment
-```yaml
-- name: Canary Deploy
-  run: |
-    # Deploy canary (10% traffic)
-    aws ecs update-service --cluster prod --service api-canary --desired-count 1
-
-    # Monitor metrics for 10 minutes
-    ./scripts/monitor-canary.sh
-
-    # If successful, roll out to 50%
-    aws ecs update-service --cluster prod --service api-canary --desired-count 5
-
-    # Monitor again
-    ./scripts/monitor-canary.sh
-
-    # If successful, full rollout
-    aws ecs update-service --cluster prod --service api --force-new-deployment
-```
-
-## Rollback
-
-```yaml
-- name: Automatic rollback on failure
-  if: failure()
-  run: |
-    # Rollback to previous task definition
-    aws ecs update-service \
-      --cluster production \
-      --service api \
-      --task-definition api:PREVIOUS
-
-    # Notify team
-    curl -X POST $SLACK_WEBHOOK -d '{"text":"🚨 Deployment failed, rolling back"}'
-```
-
-## Notifications
-
-```yaml
-- name: Notify on success
-  if: success()
-  uses: slackapi/slack-github-action@v1
-  with:
-    payload: |
-      {
-        "text": "✅ Deployment successful",
-        "blocks": [
-          {
-            "type": "section",
-            "text": {
-              "type": "mrkdwn",
-              "text": "*Deployment Successful*\n<${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|${{ github.sha }}>\nby ${{ github.actor }}"
-            }
-          }
-        ]
-      }
-  env:
-    SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-
-- name: Notify on failure
-  if: failure()
-  uses: slackapi/slack-github-action@v1
-  with:
-    payload: |
-      {
-        "text": "❌ Deployment failed - <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View logs>"
-      }
-  env:
-    SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 ```
 
 ## Best Practices
 
 ✅ **DO:**
-- Run tests in parallel when possible
-- Cache dependencies
-- Use matrix builds for multi-version support
-- Implement quality gates (coverage, security)
-- Deploy to staging before production
-- Use manual approval for production
-- Monitor deployments
+- Run tests before deploying
+- Use quality gates (linting, coverage, security)
+- Cache dependencies for speed
+- Use semantic versioning for releases
+- Add manual approval for production
+- Implement health checks after deploy
 - Set up automatic rollback
-- Notify team of deployments
+- Use secrets management (never commit secrets)
+- Run security scans on every build
+- Test in staging before production
+- Use infrastructure as code
+- Version your pipeline configs
 
 ❌ **DON'T:**
+- Deploy without running tests
+- Skip security scanning
+- Hardcode secrets in configs
 - Deploy directly to production
-- Skip tests to "move faster"
-- Hardcode secrets in pipelines
+- Ignore test failures
+- Skip code quality checks
 - Deploy without health checks
-- Ignore failing tests
-- Deploy outside business hours (without on-call)
+- Use long-running self-hosted runners for public repos
+- Allow unverified dependencies
+- Skip rollback planning
 
-## Instructions
+## Security Considerations
 
-1. **Choose platform**: GitHub Actions, GitLab CI, CircleCI
-2. **Define stages**: test → build → deploy
-3. **Add quality gates**: coverage, linting, security
-4. **Configure environments**: staging, production
-5. **Set up secrets**: AWS keys, tokens, etc.
-6. **Test pipeline**: Run on feature branch
-7. **Add notifications**: Slack, email
-8. **Document process**: README section on CI/CD
+**Secrets Management:**
+```yaml
+- name: Deploy
+  env:
+    API_KEY: ${{ secrets.API_KEY }}
+    DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+  run: ./deploy.sh
+```
+
+**Dependency Scanning:**
+```yaml
+- name: Audit dependencies
+  run: npm audit --audit-level=high
+
+- name: Snyk security scan
+  uses: snyk/actions/node@master
+  env:
+    SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+```
+
+**Container Scanning:**
+```yaml
+- name: Scan Docker image
+  uses: aquasecurity/trivy-action@master
+  with:
+    image-ref: 'myapp:latest'
+    severity: 'CRITICAL,HIGH'
+```
+
+## Deployment Strategies
+
+**Blue-Green:**
+```yaml
+- name: Deploy to green environment
+  run: ./deploy.sh green
+
+- name: Run smoke tests on green
+  run: ./smoke-tests.sh green
+
+- name: Switch traffic to green
+  run: ./switch-traffic.sh green
+
+- name: Keep blue as rollback
+  run: echo "Blue environment ready for rollback"
+```
+
+**Canary:**
+```yaml
+- name: Deploy canary (10% traffic)
+  run: ./deploy-canary.sh 10
+
+- name: Monitor metrics
+  run: ./monitor.sh --duration=10m
+
+- name: Roll out to 100%
+  if: success()
+  run: ./deploy-canary.sh 100
+```
+
+## Rollback
+
+**Automatic rollback on health check failure:**
+```yaml
+- name: Deploy
+  run: ./deploy.sh ${{ github.sha }}
+
+- name: Health check
+  run: |
+    if ! ./health-check.sh; then
+      echo "Health check failed, rolling back"
+      ./rollback.sh
+      exit 1
+    fi
+```
+
+## Notifications
+
+**Slack notification:**
+```yaml
+- name: Notify Slack on failure
+  if: failure()
+  uses: slackapi/slack-github-action@v1
+  with:
+    payload: |
+      {
+        "text": "Build failed: ${{ github.sha }}"
+      }
+  env:
+    SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+```
 
 ## Constraints
 
-- Must run tests before deployment
-- Must not expose secrets
-- Must deploy to staging before production
-- Must have manual approval for production
-- Must include health checks
-- Must notify team of deployments
-- Must support rollback
+- Must run all tests before deploying
+- Must implement quality gates
+- Must scan for security vulnerabilities
+- Must use secrets management (no hardcoded secrets)
+- Production deployments must require approval or tag
+- Must implement health checks post-deployment
+- Must have rollback capability
+- Must cache dependencies for performance
+- Must use proper branching strategy
+- Must version artifacts (Docker images, packages)

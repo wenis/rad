@@ -1,6 +1,6 @@
 ---
 name: frontend-component-builder
-description: Builds React/Vue/Svelte components with proper state management, accessibility, and responsive design. Use when creating UI components OR implementing design systems OR building forms OR adding interactive features.
+description: Builds production-ready React/Vue/Svelte components with TypeScript, proper state management (hooks, props), accessibility (WCAG AA), and responsive design (mobile-first, Tailwind CSS). Creates reusable components (buttons, forms, modals, cards), implements design system patterns, adds keyboard navigation, manages focus, and includes Storybook documentation. Use when creating UI component libraries, implementing design systems, building forms with validation, converting Figma designs to code, or refactoring legacy components.
 allowed-tools: Read, Write, Edit, Bash
 ---
 
@@ -282,161 +282,15 @@ export function ContactForm({ onSubmit }: ContactFormProps) {
 }
 ```
 
-### Vue 3 Component (Composition API)
+### Vue 3 Components
 
-```vue
-<!-- components/Card.vue -->
-<script setup lang="ts">
-import { computed } from 'vue';
+For Vue 3 components using Composition API, including Card, Button, Form with validation, and reusable composables (useToggle, useClickOutside), see:
+- **`examples/vue-components.md`** - Complete Vue 3 examples with TypeScript and composables
 
-interface CardProps {
-  variant?: 'default' | 'elevated' | 'outlined';
-  padding?: 'none' | 'sm' | 'md' | 'lg';
-}
+### Svelte Components
 
-const props = withDefaults(defineProps<CardProps>(), {
-  variant: 'default',
-  padding: 'md',
-});
-
-const cardClasses = computed(() => {
-  const base = 'rounded-lg transition-shadow';
-
-  const variants = {
-    default: 'bg-white shadow',
-    elevated: 'bg-white shadow-lg hover:shadow-xl',
-    outlined: 'bg-white border border-gray-200',
-  };
-
-  const paddings = {
-    none: 'p-0',
-    sm: 'p-4',
-    md: 'p-6',
-    lg: 'p-8',
-  };
-
-  return [base, variants[props.variant], paddings[props.padding]];
-});
-</script>
-
-<template>
-  <div :class="cardClasses">
-    <div v-if="$slots.header" class="mb-4 pb-4 border-b border-gray-200">
-      <slot name="header" />
-    </div>
-
-    <div>
-      <slot />
-    </div>
-
-    <div v-if="$slots.footer" class="mt-4 pt-4 border-t border-gray-200">
-      <slot name="footer" />
-    </div>
-  </div>
-</template>
-```
-
-**Usage:**
-```vue
-<Card variant="elevated" padding="lg">
-  <template #header>
-    <h2 class="text-xl font-bold">Card Title</h2>
-  </template>
-
-  <p>Card content goes here...</p>
-
-  <template #footer>
-    <button>Action</button>
-  </template>
-</Card>
-```
-
-### Svelte Component
-
-```svelte
-<!-- components/Modal.svelte -->
-<script lang="ts">
-  import { createEventDispatcher, onMount } from 'svelte';
-  import { fade, scale } from 'svelte/transition';
-
-  export let isOpen = false;
-  export let title: string;
-  export let size: 'sm' | 'md' | 'lg' = 'md';
-
-  const dispatch = createEventDispatcher();
-
-  const sizes = {
-    sm: 'max-w-md',
-    md: 'max-w-lg',
-    lg: 'max-w-2xl',
-  };
-
-  function handleClose() {
-    isOpen = false;
-    dispatch('close');
-  }
-
-  function handleKeydown(event: KeyboardEvent) {
-    if (event.key === 'Escape' && isOpen) {
-      handleClose();
-    }
-  }
-
-  onMount(() => {
-    document.addEventListener('keydown', handleKeydown);
-    return () => document.removeEventListener('keydown', handleKeydown);
-  });
-</script>
-
-{#if isOpen}
-  <div
-    class="fixed inset-0 z-50 flex items-center justify-center p-4"
-    transition:fade={{ duration: 200 }}
-    on:click={handleClose}
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="modal-title"
-  >
-    <!-- Backdrop -->
-    <div class="absolute inset-0 bg-black/50" />
-
-    <!-- Modal -->
-    <div
-      class="relative bg-white rounded-lg shadow-xl w-full {sizes[size]}"
-      transition:scale={{ duration: 200, start: 0.95 }}
-      on:click|stopPropagation
-    >
-      <!-- Header -->
-      <div class="flex items-center justify-between px-6 py-4 border-b">
-        <h2 id="modal-title" class="text-xl font-semibold">
-          {title}
-        </h2>
-        <button
-          on:click={handleClose}
-          class="text-gray-400 hover:text-gray-600 transition-colors"
-          aria-label="Close modal"
-        >
-          <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-      </div>
-
-      <!-- Content -->
-      <div class="px-6 py-4">
-        <slot />
-      </div>
-
-      <!-- Footer -->
-      {#if $$slots.footer}
-        <div class="px-6 py-4 border-t bg-gray-50">
-          <slot name="footer" />
-        </div>
-      {/if}
-    </div>
-  </div>
-{/if}
-```
+For Svelte components including Modal, Button, Tabs with context API, and custom stores, see:
+- **`examples/svelte-components.md`** - Complete Svelte examples with TypeScript and stores
 
 ## Accessibility Checklist
 

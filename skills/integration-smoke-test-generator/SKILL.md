@@ -1,6 +1,6 @@
 ---
 name: integration-smoke-test-generator
-description: Generates fast smoke tests for integration points to quickly catch obvious wiring issues before full validation. Use after integration builder completes OR before integration validator runs OR when troubleshooting integration failures.
+description: Generates fast smoke tests (<30 seconds) for integration points to quickly catch obvious wiring issues before full validation suite runs. Creates minimal tests that verify basic connectivity, imports resolve, types match, and essential functions are callable. Provides rapid feedback on integration success/failure. Use after integration builder completes wiring, before running full integration validator, when troubleshooting integration failures quickly, or as pre-validation sanity checks.
 allowed-tools: Read, Write, Bash
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: module-interface-generator
-description: Generates interface definitions and contracts for modules that will be built in parallel. Use when planner creates parallel build plans OR before spawning parallel builders OR when modules need to work independently OR when defining integration points.
+description: Generates TypeScript interfaces, Python Protocols, Go interfaces, or API contracts for modules to enable parallel development without blocking on dependencies. Creates minimal, type-safe interface definitions with documentation, shared types, and error classes. Allows Module A to build against Module B's interface before B is implemented. Use when planner creates parallel build plans, before spawning parallel builders, when modules have cross-dependencies, defining integration points, or enabling independent module development.
 allowed-tools: Read, Write, Glob, Grep
 ---
 
@@ -203,275 +203,27 @@ export class PasswordValidatorImpl implements PasswordValidator {
 
 ### Python Protocol Example
 
-**Build Plan**: Module B (JWT manager), Module D (auth API) depends on B
-
-**Generated Interface**:
-```python
-# interfaces/token_manager.py
-
-"""
-Token Manager Interface
-
-Module B (auth/jwt.py) implements this protocol.
-Module D (api/auth.py) depends on this protocol.
-"""
-
-from typing import Protocol, Dict, Optional
-from datetime import timedelta
-
-class TokenPayload(TypedDict):
-    """Token payload structure."""
-    user_id: str
-    email: str
-    exp: int  # Expiration timestamp
-
-class TokenManager(Protocol):
-    """Interface for JWT token management."""
-
-    def generate_token(
-        self,
-        user_id: str,
-        email: str,
-        expires_in: timedelta = timedelta(hours=24)
-    ) -> str:
-        """
-        Generate JWT token for user.
-
-        Args:
-            user_id: Unique user identifier
-            email: User email address
-            expires_in: Token expiration duration
-
-        Returns:
-            Signed JWT token string
-
-        Example:
-            token = manager.generate_token('user123', 'user@example.com')
-        """
-        ...
-
-    def verify_token(self, token: str) -> TokenPayload:
-        """
-        Verify and decode JWT token.
-
-        Args:
-            token: JWT token string
-
-        Returns:
-            Decoded token payload
-
-        Raises:
-            InvalidTokenError: If token is invalid or expired
-        """
-        ...
-
-    def refresh_token(self, token: str) -> str:
-        """
-        Generate new token from existing valid token.
-
-        Args:
-            token: Current valid token
-
-        Returns:
-            New JWT token with extended expiration
-
-        Raises:
-            InvalidTokenError: If token is invalid or expired
-        """
-        ...
-
-class InvalidTokenError(Exception):
-    """Raised when token is invalid or expired."""
-    pass
-```
-
-**Usage by Module D builder**:
-```python
-# Module D uses the protocol
-from interfaces.token_manager import TokenManager, InvalidTokenError
-
-class AuthAPI:
-    def __init__(self, token_manager: TokenManager):
-        self.token_manager = token_manager
-
-    def login(self, user_id: str, email: str) -> dict:
-        # Use interface - implementation comes from Module B
-        token = self.token_manager.generate_token(user_id, email)
-        return {"access_token": token, "token_type": "bearer"}
-
-    def validate_request(self, token: str) -> dict:
-        try:
-            payload = self.token_manager.verify_token(token)
-            return {"user_id": payload["user_id"]}
-        except InvalidTokenError:
-            raise HTTPException(401, "Invalid token")
-```
+For complete Python Protocol examples including TokenManager interface, implementation, and usage patterns, see:
+- **`examples/python-protocol.md`** - Full Python Protocol pattern with TypedDict and error handling
 
 ### API Contract Example
 
-**Build Plan**: Module C (email service), Module E (reset API) depends on C
-
-**Generated Contract**:
-```markdown
-# Email Service API Contract
-
-## Module: Email Service (Module C)
-**Implemented by**: services/email.py
-**Used by**: Module E (api/reset.py)
-
-## Interface
-
-### sendResetEmail()
-
-**Purpose**: Send password reset email to user
-
-**Signature**:
-```python
-async def send_reset_email(
-    recipient: str,
-    reset_token: str,
-    expires_in: int = 3600
-) -> EmailResult
-```
-
-**Parameters**:
-- `recipient` (str, required): Email address to send to
-  - Must be valid email format
-  - Example: "user@example.com"
-- `reset_token` (str, required): Password reset token
-  - Unique token for this reset request
-  - Example: "a1b2c3d4e5f6..."
-- `expires_in` (int, optional): Token expiration in seconds
-  - Default: 3600 (1 hour)
-  - Range: 300 to 86400
-
-**Returns**:
-```python
-class EmailResult:
-    success: bool
-    message_id: Optional[str]  # Email provider message ID
-    error: Optional[str]        # Error message if failed
-```
-
-**Errors**:
-- `InvalidEmailError`: Invalid recipient email format
-- `EmailSendError`: Failed to send email (network, provider issue)
-- `RateLimitError`: Too many emails sent (rate limiting)
-
-**Example Usage**:
-```python
-from services.email import send_reset_email, EmailResult
-
-result = await send_reset_email(
-    recipient="user@example.com",
-    reset_token="abc123",
-    expires_in=3600
-)
-
-if result.success:
-    print(f"Email sent: {result.message_id}")
-else:
-    print(f"Failed: {result.error}")
-```
-
-**Behavior**:
-1. Validates email address format
-2. Generates reset link with token
-3. Sends email using configured provider (SendGrid, AWS SES, etc.)
-4. Returns result immediately (async operation)
-5. Retries up to 3 times on transient failures
-6. Logs all send attempts
-
-**Performance**:
-- Expected latency: 200-500ms
-- Timeout: 5 seconds
-- Rate limit: 10 emails/minute per recipient
-
-**Testing**:
-- Use test mode to avoid sending real emails
-- Mock implementation available for unit tests
-```
+For detailed API contract examples including complete specifications, OpenAPI schemas, and when to use contracts vs code interfaces, see:
+- **`examples/api-contract.md`** - Email service contract with full documentation and OpenAPI example
 
 ## Interface design principles
 
-### 1. Minimal and focused
-Only include what dependent modules actually need.
+For detailed interface design principles including minimal interfaces, type safety, error handling, documentation, versioning, and dependency direction, see:
+- **`examples/design-principles.md`** - Complete guide with good/bad examples and quick reference table
 
-❌ **Bad** - Too much:
-```typescript
-interface UserService {
-  createUser(data: UserData): User;
-  updateUser(id: string, data: Partial<UserData>): User;
-  deleteUser(id: string): void;
-  listUsers(filters: Filters): User[];
-  exportUsers(format: string): string;
-  importUsers(data: string): void;
-  // ... 20 more methods
-}
-```
-
-✅ **Good** - Focused:
-```typescript
-// Only what Module D needs from Module A
-interface PasswordValidator {
-  validate(password: string): ValidationResult;
-  hashPassword(password: string): Promise<string>;
-  verifyPassword(password: string, hash: string): Promise<boolean>;
-}
-```
-
-### 2. Type-safe
-Include explicit types for all inputs and outputs.
-
-❌ **Bad** - No types:
-```python
-def process_payment(data):
-    """Process a payment."""
-    ...
-```
-
-✅ **Good** - Explicit types:
-```python
-def process_payment(
-    amount: Decimal,
-    currency: str,
-    payment_method: PaymentMethod
-) -> PaymentResult:
-    """Process a payment and return result."""
-    ...
-```
-
-### 3. Error handling
-Define what errors can occur and when.
-
-```typescript
-interface PaymentProcessor {
-  /**
-   * @throws {InsufficientFundsError} When account balance too low
-   * @throws {InvalidCardError} When card is invalid or expired
-   * @throws {NetworkError} When payment provider unreachable
-   */
-  processPayment(amount: number, card: CardInfo): Promise<PaymentResult>;
-}
-```
-
-### 4. Documentation
-Include examples and usage notes.
-
-```python
-class DataValidator(Protocol):
-    """
-    Validates user input data.
-
-    Example:
-        validator = DataValidatorImpl()
-        result = validator.validate(user_input)
-        if not result.valid:
-            return {"errors": result.errors}
-    """
-    def validate(self, data: dict) -> ValidationResult:
-        ...
-```
+**Key principles**:
+1. **Minimal and focused** - Only what's needed
+2. **Type-safe** - Explicit types for all inputs/outputs
+3. **Error handling** - Document all error cases
+4. **Documentation** - Include examples and usage notes
+5. **Versioning** - Plan for interface changes
+6. **Separation of concerns** - One interface per responsibility
+7. **Dependency direction** - Depend on abstractions
 
 ## Instructions
 

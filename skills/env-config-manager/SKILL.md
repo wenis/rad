@@ -1,6 +1,6 @@
 ---
 name: env-config-manager
-description: Manages environment variables and configuration across dev/staging/prod environments. Use when setting up deployment configs OR managing secrets OR creating environment templates OR migrating config to environment variables.
+description: Manages environment variables and configuration across dev/staging/prod using .env files, dotenv, docker-compose env vars, or cloud secret managers (AWS Secrets Manager, Azure Key Vault). Creates .env.example templates, validates required vars, implements type-safe config loading, and migrates hardcoded config to environment variables. Handles secrets securely without committing them. Use when setting up deployment configs, managing API keys/secrets, creating environment templates, containerizing apps, or migrating to 12-factor app patterns.
 allowed-tools: Read, Write, Edit
 ---
 

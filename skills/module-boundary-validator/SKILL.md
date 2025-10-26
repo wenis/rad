@@ -1,6 +1,6 @@
 ---
 name: module-boundary-validator
-description: Validates that proposed modules are properly isolated and suitable for parallel development. Checks for tight coupling, global state, circular dependencies, and hidden dependencies. Use after planner creates build plan OR before starting parallel builds OR when modules fail to integrate.
+description: Validates that proposed module boundaries are properly isolated and suitable for parallel development. Analyzes code for tight coupling, shared global state, circular dependencies, hidden dependencies, and non-obvious integration points. Ensures modules can truly build independently without stepping on each other. Generates validation reports with boundary violations and refactoring suggestions. Use after planner creates build plan, before starting parallel builds, when modules fail to integrate, or when assessing parallel development feasibility.
 allowed-tools: Read, Grep, Glob, Write
 ---
 

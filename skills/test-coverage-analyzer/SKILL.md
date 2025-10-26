@@ -1,6 +1,6 @@
 ---
 name: test-coverage-analyzer
-description: Analyzes test coverage reports and identifies untested code paths. Use when checking test completeness OR reviewing coverage reports OR identifying gaps in test suites OR before deployment. Supports pytest-cov, jest, vitest, go test, and similar tools.
+description: Analyzes test coverage reports from pytest-cov, Jest, Vitest, Istanbul (nyc), or Go test coverage to identify untested code paths, missing edge cases, and critical uncovered logic. Generates coverage metrics (line, branch, function coverage), highlights high-risk uncovered code, and creates actionable test recommendations. Integrates with CI/CD to enforce coverage thresholds. Use when checking test completeness, reviewing coverage reports before deployment, identifying gaps in test suites, enforcing minimum coverage requirements, or prioritizing which code to test next.
 allowed-tools: Read, Grep, Bash, Write
 ---
 

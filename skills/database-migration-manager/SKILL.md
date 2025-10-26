@@ -1,6 +1,6 @@
 ---
 name: database-migration-manager
-description: Creates, manages, and validates database migrations for schema changes. Handles migrations for PostgreSQL, MySQL, MongoDB. Use when adding/modifying database tables OR creating migrations OR planning schema changes OR investigating migration failures.
+description: Creates and manages database migrations for schema changes using Alembic (Python/SQLAlchemy), Prisma (TypeScript), TypeORM, Django migrations, or Knex.js. Handles PostgreSQL, MySQL, MongoDB migrations with up/down methods, implements backward-compatible multi-step migrations, data backfills, and rollback strategies. Generates migration files for adding columns, creating indexes, modifying constraints, and renaming tables safely. Use when adding/modifying database tables, creating schema migrations, planning backward-compatible changes, investigating migration failures, or rolling back failed migrations.
 allowed-tools: Read, Write, Edit, Bash
 ---
 
@@ -340,34 +340,17 @@ python manage.py migrate
 
 **Local testing:**
 ```bash
-# Run migration
-npm run migrate:up
-
-# Verify schema
-psql -d myapp_dev -c "\d users"
-
-# Test rollback
-npm run migrate:down
-
-# Verify rollback worked
-psql -d myapp_dev -c "\d users"
-
-# Re-run migration
-npm run migrate:up
+npm run migrate:up          # Run migration
+psql -d myapp_dev -c "\d users"  # Verify schema
+npm run migrate:down        # Test rollback
+npm run migrate:up          # Re-run
 ```
 
 **Staging testing:**
 ```bash
-# Deploy to staging
 git push staging main
-
-# Run migration on staging
 ssh staging "cd /app && npm run migrate"
-
-# Verify application works
 curl https://staging.example.com/health
-
-# Check for errors
 tail -f /var/log/app.log
 ```
 
@@ -381,80 +364,26 @@ tail -f /var/log/app.log
 
 **Deployment:**
 ```bash
-# Run migration
 npm run migrate:production
-
-# Verify schema
-psql -d myapp_prod -c "\d users"
-
-# Monitor application
-tail -f /var/log/app.log
-
-# Check error rates
+psql -d myapp_prod -c "\d users"  # Verify schema
+tail -f /var/log/app.log          # Monitor
 curl https://api.example.com/metrics
 ```
 
-**Post-deployment:**
-- Monitor for 30 minutes
-- Check error rates and performance
-- Verify new feature works
-- Keep rollback ready
+**Post-deployment:** Monitor for 30min, check error rates, verify feature, keep rollback ready
 
 ## Common Issues and Solutions
 
 ### Issue: Migration hanging
-
 **Cause:** Waiting for lock on table
-
-**Solution:**
-```sql
--- Check for locks
-SELECT * FROM pg_locks WHERE NOT granted;
-
--- Find blocking queries
-SELECT pid, query FROM pg_stat_activity WHERE state = 'active';
-
--- Kill blocking query (if safe)
-SELECT pg_terminate_backend(12345);
-```
+**Solution:** Check locks with `SELECT * FROM pg_locks WHERE NOT granted`, find blocking queries, terminate if safe.
 
 ### Issue: Out of order migrations
-
 **Cause:** Multiple branches creating migrations
+**Solution:** Regenerate with correct parent: `alembic revision --head xyz789` or merge: `alembic merge head1 head2`
 
-**Solution:**
-```bash
-# Regenerate migration with correct parent
-alembic revision --head xyz789 -m "add email column"
-
-# Or merge branches
-alembic merge head1 head2 -m "merge migrations"
-```
-
-### Issue: Data too large to migrate at once
-
-**Solution:** Batch processing
-```python
-def upgrade():
-    # Batch update in chunks
-    batch_size = 1000
-    offset = 0
-
-    while True:
-        result = op.execute(f"""
-            UPDATE users
-            SET email = username || '@example.com'
-            WHERE email IS NULL
-            LIMIT {batch_size}
-            OFFSET {offset}
-        """)
-
-        if result.rowcount == 0:
-            break
-
-        offset += batch_size
-        print(f"Processed {offset} rows")
-```
+### Issue: Data too large to migrate
+**Solution:** Batch processing in chunks of 1000-10000 rows with offset tracking, commit between batches.
 
 ## Instructions
 

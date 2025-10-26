@@ -1,6 +1,6 @@
 ---
 name: docker-compose-builder
-description: Creates Docker and Docker Compose configurations for multi-service applications. Use when containerizing applications OR setting up local development environments OR creating deployment configs OR adding new services to existing compose files.
+description: Creates production-ready Dockerfiles with multi-stage builds and Docker Compose configurations for multi-service applications (app + database + Redis + message queue). Implements health checks, volume mounts for persistence, networks for service isolation, environment-specific configs (dev/staging/prod), and security best practices (non-root users, minimal images). Generates docker-compose.yml with service dependencies, port mappings, and restart policies. Use when containerizing applications, setting up local development environments, creating deployment configs, adding services (database, cache, queue), or building microservices architectures.
 allowed-tools: Read, Write, Edit, Bash
 ---
 
@@ -448,59 +448,23 @@ project/
 ```
 
 ## README template
-````markdown
+```markdown
 # Docker Setup
+Prerequisites: Docker 20.10+, Docker Compose 2.0+
 
-## Prerequisites
-- Docker 20.10+
-- Docker Compose 2.0+
+Quick Start:
+  cp .env.example .env
+  docker-compose up -d
+  docker-compose exec api python manage.py migrate
 
-## Quick Start
+Development:
+  docker-compose logs -f          # View logs
+  docker-compose up -d --build    # Rebuild
+  docker-compose exec api pytest  # Tests
 
-1. Copy environment file:
-   ```bash
-   cp .env.example .env
-   ```
-
-2. Start services:
-   ```bash
-   docker-compose up -d
-   ```
-
-3. Run migrations:
-   ```bash
-   docker-compose exec api python manage.py migrate
-   ```
-
-4. Access application:
-   - Web: http://localhost:3000
-   - API: http://localhost:8000
-   - Database: localhost:5432
-
-## Development
-
-### View logs
-```bash
-docker-compose logs -f
+Production:
+  docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 ```
-
-### Rebuild after changes
-```bash
-docker-compose up -d --build
-```
-
-### Run tests
-```bash
-docker-compose exec api pytest
-```
-
-## Production
-
-Deploy with:
-```bash
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
-```
-````
 
 ## Best practices
 - Use specific image versions, not `latest`

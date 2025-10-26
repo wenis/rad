@@ -1,6 +1,6 @@
 ---
 name: documentation-generator
-description: Generates comprehensive documentation including README files, architecture diagrams, ADRs, API docs, onboarding guides, and deployment runbooks from code and project structure.
+description: Generates comprehensive project documentation including README files with badges and setup instructions, architecture decision records (ADRs), API documentation, onboarding guides, deployment runbooks, CONTRIBUTING guides, and architecture diagrams (Mermaid). Analyzes code structure and dependencies to create accurate, up-to-date documentation. Use when starting new projects, onboarding team members, documenting existing codebases, creating API references, writing deployment guides, or preparing for open source release.
 allowed-tools: Read, Write, Grep, Glob, Bash
 ---
 
@@ -16,712 +16,359 @@ You generate comprehensive, maintainable documentation that helps teams understa
 - Generating API documentation
 - Creating architecture diagrams
 - Writing contributing guidelines
+- Documenting existing undocumented code
 
 ## Documentation Types
 
 ### 1. README.md (Project Overview)
-Primary entry point for any project.
+Primary entry point for any project. Should answer: What is this? Why does it exist? How do I use it?
+
+**Template:** `templates/README.md`
 
 ### 2. Architecture Decision Records (ADRs)
-Document why decisions were made.
+Document significant architectural decisions with context, alternatives, and consequences.
 
-### 3. API Documentation
-Endpoint documentation, examples.
+**Template:** `templates/ADR.md`
 
-### 4. Onboarding Guide
-Get new developers productive fast.
+### 3. Deployment Runbook
+Step-by-step deployment instructions, rollback procedures, and troubleshooting.
 
-### 5. Deployment Runbook
-Step-by-step deployment instructions.
+**Template:** `templates/DEPLOYMENT.md`
 
-### 6. Contributing Guidelines
-How to contribute to the project.
+### 4. Contributing Guidelines
+How to contribute to the project - setup, workflow, standards, PR process.
 
-### 7. Architecture Diagrams
-Visual system overview.
+**Template:** `templates/CONTRIBUTING.md`
 
-## README.md Template
+### 5. API Documentation
+Endpoint documentation with examples. Often auto-generated from OpenAPI/Swagger specs.
+
+### 6. Architecture Diagrams
+Visual system overview using Mermaid, PlantUML, or draw.io.
+
+### 7. Onboarding Guide
+Get new developers productive fast with setup instructions and architecture overview.
+
+## Quick Start: README Example
+
+Here's a minimal README structure:
 
 ```markdown
 # Project Name
 
-Brief description of what this project does and why it exists.
-
-## Features
-
-- ✨ Feature 1
-- 🚀 Feature 2
-- 🔒 Feature 3
-
-## Tech Stack
-
-- **Backend**: FastAPI, PostgreSQL, Redis
-- **Frontend**: React, TypeScript, Tailwind CSS
-- **Infrastructure**: Docker, AWS ECS, Terraform
-- **Monitoring**: Prometheus, Grafana, Sentry
-
-## Prerequisites
-
-- Node.js 18+ or Python 3.11+
-- Docker and Docker Compose
-- PostgreSQL 15+
-- (Optional) AWS CLI for deployment
+Brief description (1-2 sentences).
 
 ## Quick Start
 
-### Option 1: Docker (Recommended)
-
 \`\`\`bash
-# Clone the repository
 git clone https://github.com/org/project.git
 cd project
-
-# Copy environment file
-cp .env.example .env
-
-# Start services
 docker-compose up -d
-
-# Run migrations
-docker-compose exec api python manage.py migrate
-
-# Access the app
 open http://localhost:3000
 \`\`\`
 
-### Option 2: Local Development
+## Tech Stack
 
-\`\`\`bash
-# Install dependencies
-npm install  # or: pip install -r requirements.txt
-
-# Set up database
-createdb myapp_dev
-npm run migrate  # or: alembic upgrade head
-
-# Start development server
-npm run dev  # or: uvicorn main:app --reload
-
-# Access the app
-open http://localhost:3000
-\`\`\`
-
-## Project Structure
-
-\`\`\`
-project/
-├── src/
-│   ├── api/           # API endpoints
-│   ├── models/        # Data models
-│   ├── services/      # Business logic
-│   └── utils/         # Utilities
-├── tests/
-│   ├── unit/          # Unit tests
-│   └── integration/   # Integration tests
-├── docs/              # Documentation
-├── docker-compose.yml
-└── README.md
-\`\`\`
-
-## Configuration
-
-### Environment Variables
-
-Required:
-- `DATABASE_URL` - PostgreSQL connection string
-- `REDIS_URL` - Redis connection string
-- `JWT_SECRET` - Secret for JWT tokens (min 32 chars)
-
-Optional:
-- `LOG_LEVEL` - Logging level (default: info)
-- `PORT` - Server port (default: 8000)
-
-See `.env.example` for full list.
+- Backend: FastAPI, PostgreSQL
+- Frontend: React, TypeScript
+- Infrastructure: Docker, AWS
 
 ## Development
 
-### Running Tests
-
 \`\`\`bash
-# All tests
+npm install
 npm test
-
-# Unit tests only
-npm run test:unit
-
-# Integration tests
-npm run test:integration
-
-# With coverage
-npm run test:coverage
-\`\`\`
-
-### Code Quality
-
-\`\`\`bash
-# Linting
-npm run lint
-
-# Type checking
-npm run typecheck
-
-# Formatting
-npm run format
-\`\`\`
-
-### Database Migrations
-
-\`\`\`bash
-# Create migration
-npm run migrate:create -- add_users_table
-
-# Run migrations
-npm run migrate
-
-# Rollback
-npm run migrate:rollback
+npm run dev
 \`\`\`
 
 ## Deployment
 
-See [DEPLOYMENT.md](docs/DEPLOYMENT.md) for detailed deployment instructions.
-
-### Quick Deploy
-
-\`\`\`bash
-# Build
-npm run build
-
-# Deploy to staging
-npm run deploy:staging
-
-# Deploy to production
-npm run deploy:production
-\`\`\`
-
-## API Documentation
-
-API docs available at:
-- Development: http://localhost:8000/docs
-- Staging: https://api-staging.example.com/docs
-- Production: https://api.example.com/docs
-
-## Architecture
-
-See [ARCHITECTURE.md](docs/ARCHITECTURE.md) for system architecture overview.
+See [DEPLOYMENT.md](docs/DEPLOYMENT.md)
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines.
-
-## License
-
-MIT License - see [LICENSE](LICENSE) for details.
-
-## Support
-
-- 📧 Email: support@example.com
-- 💬 Slack: #project-support
-- 📖 Docs: https://docs.example.com
-- 🐛 Issues: https://github.com/org/project/issues
-
-## Acknowledgments
-
-- Thanks to [contributor](https://github.com/contributor)
-- Built with [awesome-lib](https://github.com/awesome-lib)
-\`\`\`
-
-## Architecture Decision Record (ADR)
-
-```markdown
-# ADR-0001: Use PostgreSQL for Primary Database
-
-**Date**: 2025-01-24
-**Status**: Accepted
-**Deciders**: Alice (Tech Lead), Bob (Backend Dev)
-
-## Context
-
-We need to choose a database for our application that handles user data, transactions, and relationships.
-
-### Requirements
-- ACID compliance for financial transactions
-- Support for complex queries and joins
-- Mature ecosystem and tooling
-- Good performance for read-heavy workloads
-- Support for JSON data (flexible schema)
-
-## Decision
-
-We will use **PostgreSQL 15** as our primary database.
-
-## Rationale
-
-### Pros
-- **ACID compliance**: Critical for financial data integrity
-- **Mature and stable**: 30+ years of development
-- **Rich feature set**: JSON support, full-text search, geospatial
-- **Performance**: Excellent for complex queries and analytical workloads
-- **Ecosystem**: ORMs (SQLAlchemy, TypeORM), migration tools, monitoring
-- **Open source**: No vendor lock-in, large community
-
-### Alternatives Considered
-
-**MySQL**
-- Pros: Simpler, slightly better for write-heavy workloads
-- Cons: Less feature-rich, weaker JSON support
-- Why not: We need advanced features (CTEs, window functions)
-
-**MongoDB**
-- Pros: Flexible schema, horizontal scaling
-- Cons: No transactions (at the time), eventual consistency
-- Why not: Need ACID guarantees for financial data
-
-**DynamoDB**
-- Pros: Managed, auto-scaling, serverless
-- Cons: Vendor lock-in, limited query flexibility, expensive for reads
-- Why not: Complex queries required, want multi-cloud option
-
-## Consequences
-
-### Positive
-- Reliable, well-tested database for critical data
-- Rich querying capabilities (CTEs, window functions, JSON)
-- Excellent tooling and community support
-- Can use JSONB for semi-structured data
-
-### Negative
-- Vertical scaling (need bigger servers, not just add more)
-- More complex to operate than managed services
-- Requires expertise for performance tuning
-
-### Neutral
-- Need to set up replication for HA
-- Will use connection pooling (PgBouncer)
-- Regular backups and point-in-time recovery needed
-
-## Implementation Notes
-
-- Use Docker for local development
-- RDS for staging/production (managed)
-- Connection pooling with PgBouncer
-- Read replicas for analytics queries
-- Backup retention: 30 days
-- Monitoring: CloudWatch + custom Prometheus metrics
-
-## Related Decisions
-
-- ADR-0002: Use SQLAlchemy as ORM
-- ADR-0003: Database migration strategy (Alembic)
-
-## References
-
-- [PostgreSQL Documentation](https://www.postgresql.org/docs/)
-- [Comparison: PostgreSQL vs MySQL](https://example.com/comparison)
-- Internal discussion: [Link to Slack thread]
+See [CONTRIBUTING.md](CONTRIBUTING.md)
 ```
 
-## Deployment Runbook
+## Comprehensive Templates
+
+For complete, production-ready documentation templates:
+
+**README.md** → `templates/README.md`
+- Features section with icons
+- Prerequisites and dependencies
+- Multiple installation methods (Docker, local)
+- Project structure visualization
+- Environment variable configuration
+- Development workflow (tests, linting, migrations)
+- Deployment quick reference
+- API documentation links
+- Support and contact information
+
+**ADR (Architecture Decision Record)** → `templates/ADR.md`
+- Decision title and metadata
+- Context and requirements
+- Decision statement
+- Rationale with pros/cons
+- Alternatives considered
+- Consequences (positive, negative, neutral)
+- Implementation notes
+- Related decisions
+
+**Deployment Runbook** → `templates/DEPLOYMENT.md`
+- Environment overview
+- Pre-deployment checklist
+- Staging deployment process
+- Production deployment (with staged rollout)
+- Database migration procedures
+- Rollback procedures (application and database)
+- Monitoring and health checks
+- Troubleshooting guide
+- Emergency contacts
+
+**Contributing Guidelines** → `templates/CONTRIBUTING.md`
+- Code of conduct
+- Getting started (fork, clone, branch)
+- Development workflow
+- Commit message conventions
+- Pull request process
+- Code standards and style guide
+- Testing requirements
+- Review process
+
+## Generating Documentation from Code
+
+Use these tools to analyze the project and extract information:
+
+### 1. Analyze Project Structure
 
-```markdown
-# Deployment Runbook
-
-## Overview
-
-This runbook describes how to deploy the application to staging and production environments.
-
-## Environments
-
-| Environment | URL | Purpose |
-|-------------|-----|---------|
-| Development | http://localhost:3000 | Local development |
-| Staging | https://staging.example.com | Pre-production testing |
-| Production | https://example.com | Live users |
-
-## Pre-Deployment Checklist
-
-- [ ] All tests passing (`npm test`)
-- [ ] Code reviewed and approved
-- [ ] Database migrations tested on staging
-- [ ] Environment variables configured
-- [ ] Monitoring alerts configured
-- [ ] Rollback plan documented
-
-## Deployment Process
-
-### Staging Deployment
-
-**Trigger**: Merge to `main` branch (automatic)
-
-**Steps**:
-1. CI/CD runs tests
-2. Build Docker image
-3. Push to container registry
-4. Deploy to ECS staging cluster
-5. Run database migrations
-6. Health check verification
-7. Smoke tests
-
-**Manual verification**:
-```bash
-# Check deployment status
-aws ecs describe-services --cluster staging --services api
-
-# Check logs
-aws logs tail /aws/ecs/staging-api --follow
-
-# Smoke test
-curl https://api-staging.example.com/health
-```
-
-### Production Deployment
-
-**Trigger**: Manual (requires approval)
-
-**Steps**:
-1. Create deployment tag: `v1.2.3`
-2. Approve in GitHub Actions
-3. Build production image
-4. **Staged rollout**:
-   - Deploy to 10% of instances
-   - Monitor for 10 minutes
-   - If healthy, deploy to 50%
-   - Monitor for 10 minutes
-   - If healthy, deploy to 100%
-5. Run database migrations (if any)
-6. Monitor metrics for 30 minutes
-
-**Commands**:
-```bash
-# Tag release
-git tag -a v1.2.3 -m "Release v1.2.3"
-git push origin v1.2.3
-
-# Monitor deployment
-aws ecs describe-services --cluster production --services api
-
-# Check metrics
-open https://grafana.example.com/d/api-dashboard
-
-# Rollback if needed (see Rollback section)
-```
-
-### Database Migrations
-
-**Staging**:
-```bash
-# Automatic via CI/CD after deployment
-# Or manual:
-aws ecs run-task --cluster staging --task-definition migrate
-```
-
-**Production** (requires maintenance window for breaking changes):
-```bash
-# 1. Create backup
-pg_dump -h prod-db.example.com -U admin myapp > backup.sql
-
-# 2. Run migration
-aws ecs run-task --cluster production --task-definition migrate
-
-# 3. Verify
-psql -h prod-db.example.com -U admin myapp -c "\dt"
-```
-
-## Rollback Procedure
-
-### Application Rollback
-
-**Quick rollback** (last known good version):
-```bash
-# Revert to previous task definition
-aws ecs update-service \
-  --cluster production \
-  --service api \
-  --task-definition api:PREVIOUS_VERSION
-
-# Monitor rollback
-aws ecs describe-services --cluster production --services api
-```
-
-**Full rollback** (specific version):
-```bash
-# Deploy specific tag
-git checkout v1.2.2
-# Trigger deployment via CI/CD
-```
-
-### Database Rollback
-
-**Non-destructive migrations**: Rollback not needed
-**Destructive migrations**: Restore from backup
-
-```bash
-# Stop application
-aws ecs update-service --cluster production --service api --desired-count 0
-
-# Restore database
-pg_restore -h prod-db.example.com -U admin -d myapp backup.sql
-
-# Restart application with old version
-aws ecs update-service --cluster production --service api --desired-count 3
-```
-
-## Monitoring
-
-### Key Metrics to Watch
-
-**During deployment** (first 30 minutes):
-- Error rate (should be < 1%)
-- Response time P95 (should be < 500ms)
-- Request rate (should match normal traffic)
-- Database connection pool (should not be exhausted)
-
-**Dashboards**:
-- [Application Dashboard](https://grafana.example.com/d/app)
-- [Infrastructure Dashboard](https://grafana.example.com/d/infra)
-
-**Alerts** (Slack #alerts):
-- High error rate (> 5%)
-- High latency (P95 > 1s)
-- Service down
-- Database issues
-
-### Health Checks
-
-```bash
-# Application health
-curl https://api.example.com/health
-
-# Expected response:
-# {
-#   "status": "healthy",
-#   "version": "1.2.3",
-#   "database": "connected",
-#   "redis": "connected"
-# }
-```
-
-## Troubleshooting
-
-### Deployment Stuck
-
-**Symptom**: Deployment not progressing
-**Check**:
-```bash
-aws ecs describe-services --cluster production --services api
-aws logs tail /aws/ecs/production-api --follow
-```
-**Fix**: Check task definition, security groups, load balancer
-
-### High Error Rate After Deployment
-
-**Symptom**: Error rate > 5%
-**Action**: Immediate rollback
-**Investigation**: Check Sentry, application logs
-
-### Database Migration Failed
-
-**Symptom**: Migration task failed
-**Action**: Do NOT rollback app, investigate migration
-**Fix**: Fix migration, re-run
-**Last resort**: Restore from backup
-
-## Emergency Contacts
-
-- **On-call Engineer**: [PagerDuty](https://example.pagerduty.com)
-- **DevOps Lead**: Alice (@alice on Slack)
-- **CTO**: Bob (bob@example.com)
-
-## Post-Deployment
-
-- [ ] Verify key user flows working
-- [ ] Check error tracking (Sentry)
-- [ ] Monitor metrics for 1 hour
-- [ ] Update CHANGELOG.md
-- [ ] Notify team in #engineering
-```
-
-## Contributing Guidelines
-
-```markdown
-# Contributing to Project
-
-Thank you for your interest in contributing! This document provides guidelines for contributing to this project.
-
-## Code of Conduct
-
-Be respectful, inclusive, and constructive. See [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
-
-## Getting Started
-
-1. **Fork the repository**
-2. **Clone your fork**: `git clone https://github.com/your-username/project.git`
-3. **Create a branch**: `git checkout -b feature/my-feature`
-4. **Make changes** (see Development Workflow below)
-5. **Test thoroughly**
-6. **Submit pull request**
-
-## Development Workflow
-
-### 1. Set Up Environment
-
-```bash
-# Install dependencies
-npm install
-
-# Copy environment file
-cp .env.example .env
-
-# Start services
-docker-compose up -d
-
-# Run migrations
-npm run migrate
-```
-
-### 2. Make Changes
-
-- **Follow style guide** (Prettier, ESLint)
-- **Write tests** for new features
-- **Update documentation** if needed
-- **Commit frequently** with clear messages
-
-### 3. Test Your Changes
-
-```bash
-# Run tests
-npm test
-
-# Run linter
-npm run lint
-
-# Type check
-npm run typecheck
-
-# Check coverage
-npm run test:coverage
-```
-
-### 4. Commit Guidelines
-
-Follow [Conventional Commits](https://www.conventionalcommits.org/):
-
-```
-feat: add user authentication
-fix: resolve database connection issue
-docs: update README with new setup steps
-chore: upgrade dependencies
-refactor: simplify payment processing
-test: add integration tests for API
-```
-
-### 5. Pull Request Process
-
-**Before submitting**:
-- [ ] Tests pass
-- [ ] Code follows style guide
-- [ ] Documentation updated
-- [ ] No merge conflicts
-- [ ] Linked to issue (if applicable)
-
-**PR Template**:
-```markdown
-## Description
-Brief description of changes
-
-## Type of Change
-- [ ] Bug fix
-- [ ] New feature
-- [ ] Breaking change
-- [ ] Documentation update
-
-## Testing
-How was this tested?
-
-## Checklist
-- [ ] Tests pass
-- [ ] Code reviewed
-- [ ] Documentation updated
-```
-
-## Code Standards
-
-### Style Guide
-
-- **TypeScript**: Follow ESLint rules, use Prettier
-- **Python**: Follow PEP 8, use Black formatter
-- **Naming**: camelCase (JS), snake_case (Python)
-
-### Testing Standards
-
-- **Unit tests**: Test individual functions
-- **Integration tests**: Test API endpoints
-- **Coverage**: Minimum 80% for new code
-
-### Documentation
-
-- **Functions**: JSDoc or docstrings
-- **Complex logic**: Inline comments
-- **API changes**: Update OpenAPI spec
-
-## Review Process
-
-1. **Automated checks**: CI/CD runs tests, linting
-2. **Code review**: At least one approval required
-3. **QA testing**: For significant features
-4. **Merge**: Squash and merge to main
-
-## Questions?
-
-- Open an issue
-- Ask in #engineering on Slack
-- Email: dev@example.com
-```
-
-## Generating from Code
-
-**Analyze project structure:**
 ```bash
 # Find key files
 ls -la
 find . -name "*.md" -o -name "package.json" -o -name "pyproject.toml"
 
-# Analyze dependencies
-cat package.json | jq '.dependencies'
-cat requirements.txt
+# Check existing documentation
+find . -name "README.md" -o -name "CONTRIBUTING.md"
 ```
 
-**Infer tech stack:**
+### 2. Identify Tech Stack
+
 ```bash
+# Node.js projects
+cat package.json | grep "dependencies" -A 20
+
+# Python projects
+cat requirements.txt
+cat pyproject.toml
+
 # Check for frameworks
-grep -r "from fastapi" .
-grep -r "import React" .
+grep -r "from fastapi" . --include="*.py"
+grep -r "import React" . --include="*.tsx"
+grep -r "import express" . --include="*.ts"
 
 # Database
 grep -r "DATABASE_URL" .
 ```
 
+### 3. Extract Environment Variables
+
+```bash
+# Find .env files
+find . -name ".env.example" -o -name ".env.template"
+
+# Search for environment variable usage
+grep -r "process.env" . --include="*.js" --include="*.ts"
+grep -r "os.environ" . --include="*.py"
+```
+
+### 4. Identify Commands
+
+```bash
+# Node.js scripts
+cat package.json | grep "scripts" -A 20
+
+# Python CLI
+grep -r "click.command" . --include="*.py"
+grep -r "argparse" . --include="*.py"
+
+# Makefiles
+cat Makefile 2>/dev/null
+```
+
+### 5. Extract API Endpoints
+
+```bash
+# FastAPI
+grep -r "@app.get\|@app.post\|@app.put\|@app.delete" . --include="*.py"
+
+# Express
+grep -r "app.get\|app.post\|app.put\|app.delete\|router.get" . --include="*.ts"
+
+# OpenAPI spec
+find . -name "openapi.yaml" -o -name "swagger.yaml"
+```
+
+## Architecture Diagrams with Mermaid
+
+Mermaid syntax for common diagram types:
+
+### System Architecture
+
+```markdown
+\`\`\`mermaid
+graph TD
+    A[User] -->|HTTPS| B[Load Balancer]
+    B --> C[App Server 1]
+    B --> D[App Server 2]
+    C --> E[(PostgreSQL)]
+    D --> E
+    C --> F[(Redis)]
+    D --> F
+\`\`\`
+```
+
+### Deployment Flow
+
+```markdown
+\`\`\`mermaid
+sequenceDiagram
+    Developer->>GitHub: Push code
+    GitHub->>CI/CD: Trigger build
+    CI/CD->>CI/CD: Run tests
+    CI/CD->>Registry: Push image
+    CI/CD->>ECS: Deploy
+    ECS->>Database: Run migrations
+    ECS->>Monitoring: Health check
+\`\`\`
+```
+
+### Data Flow
+
+```markdown
+\`\`\`mermaid
+flowchart LR
+    A[API Request] --> B{Auth?}
+    B -->|Yes| C[Validate]
+    B -->|No| D[401 Error]
+    C --> E[Business Logic]
+    E --> F[(Database)]
+    F --> G[Response]
+\`\`\`
+```
+
 ## Best Practices
 
 ✅ **DO:**
-- Keep README concise (link to deeper docs)
-- Update docs with code changes
-- Use diagrams for complex systems
-- Provide working examples
-- Document the "why" not just "what"
-- Include troubleshooting section
+- Keep README concise (< 500 lines), link to detailed docs
+- Update documentation when code changes
+- Use diagrams for complex systems (worth 1000 words)
+- Provide working, copy-paste examples
+- Document the "why" behind decisions, not just "what"
+- Include troubleshooting sections
+- Make setup instructions foolproof
+- Use consistent formatting and structure
+- Test instructions on a fresh machine
+- Include screenshots for UI-heavy projects
 
 ❌ **DON'T:**
-- Write documentation that duplicates code
-- Skip setup instructions
-- Assume knowledge
-- Let docs get stale
+- Write documentation that duplicates code comments
+- Skip setup instructions ("it's obvious")
+- Assume prior knowledge
+- Let documentation get stale
 - Forget to document breaking changes
+- Over-document trivial code
+- Use jargon without explanation
+- Write documentation nobody will read
+
+## Documentation Checklist
+
+When creating documentation, ensure you include:
+
+### README.md
+- [ ] Project description and purpose
+- [ ] Prerequisites listed
+- [ ] Quick start (< 5 commands)
+- [ ] Tech stack overview
+- [ ] Installation instructions
+- [ ] Basic usage examples
+- [ ] Link to full documentation
+- [ ] Contributing guidelines link
+- [ ] License information
+- [ ] Support/contact information
+
+### For Production Projects
+- [ ] README.md (essential)
+- [ ] CONTRIBUTING.md (for open source)
+- [ ] DEPLOYMENT.md or runbook
+- [ ] CHANGELOG.md (version history)
+- [ ] LICENSE file
+- [ ] .env.example (environment template)
+- [ ] Architecture documentation
+- [ ] API documentation (auto-generated if possible)
+- [ ] Troubleshooting guide
+- [ ] ADRs for major decisions
+
+### ADR (Architecture Decision Records)
+- [ ] Decision title and date
+- [ ] Current status (proposed/accepted/deprecated)
+- [ ] Context and problem statement
+- [ ] Decision made
+- [ ] Alternatives considered
+- [ ] Consequences (pros and cons)
+- [ ] Implementation notes
+
+## Instructions
+
+1. **Identify documentation need**
+   - New project? Start with README.md template
+   - Architectural decision? Use ADR template
+   - Deployment process? Use Deployment runbook
+   - Open source project? Add CONTRIBUTING.md
+
+2. **Analyze the project**
+   - Use Grep and Glob to explore codebase
+   - Identify tech stack from dependencies
+   - Find existing documentation
+   - Extract key commands and scripts
+
+3. **Choose appropriate template**
+   - Use `templates/` directory for comprehensive examples
+   - Customize based on project needs
+   - Don't include sections that don't apply
+
+4. **Generate content**
+   - Fill in project-specific details
+   - Add working code examples
+   - Include actual commands that work
+   - Add troubleshooting for common issues
+
+5. **Add diagrams if needed**
+   - Use Mermaid for architecture diagrams
+   - System architecture for complex systems
+   - Sequence diagrams for flows
+   - Keep diagrams simple and focused
+
+6. **Review and test**
+   - Verify all commands work
+   - Test on clean environment
+   - Check links are valid
+   - Ensure examples are copy-pasteable
+
+7. **Maintain**
+   - Update when code changes
+   - Review quarterly
+   - Incorporate user feedback
+   - Keep CHANGELOG.md current
 
 ## Constraints
 
-- Must include Quick Start section
-- Must list prerequisites
-- Must provide examples that work
-- Must keep up to date with code
-- Must be accessible to new developers
+- Must include Quick Start section (< 5 commands to get running)
+- Must list prerequisites clearly
+- Must provide examples that actually work
+- Must keep up to date with code changes
+- Must be accessible to new developers (no assumed knowledge)
+- README must be < 500 lines (link to detailed docs for more)
+- Setup instructions must be testable on a fresh machine
+- All code examples must be copy-pasteable
+- External links must be checked periodically
+- Documentation must be versioned with code

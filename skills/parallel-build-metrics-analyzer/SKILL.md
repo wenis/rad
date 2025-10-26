@@ -1,6 +1,6 @@
 ---
 name: parallel-build-metrics-analyzer
-description: Analyzes parallel build performance metrics to identify bottlenecks and optimization opportunities. Tracks speedup, module timing, iteration counts, and suggests improvements. Use after parallel builds complete OR when analyzing build performance OR identifying optimization opportunities.
+description: Analyzes parallel build performance metrics including speedup ratio (parallel vs sequential), module build times, iteration counts, wait times, and resource utilization. Identifies bottlenecks (slowest modules, excessive iterations, dependency chains), calculates parallel efficiency, and suggests optimizations (better module boundaries, caching, pre-computation). Generates performance reports comparing runs over time. Use after parallel builds complete, when analyzing build performance, identifying optimization opportunities, or measuring RAD system effectiveness.
 allowed-tools: Read, Write, Bash
 ---
 

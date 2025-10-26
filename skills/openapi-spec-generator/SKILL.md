@@ -1,392 +1,56 @@
 ---
 name: openapi-spec-generator
-description: Generates OpenAPI/Swagger specifications from code, documenting REST APIs automatically. Use when documenting APIs OR after building API endpoints OR setting up API documentation OR before generating API clients.
-allowed-tools: Read, Grep, Write, Bash
+description: Generates OpenAPI 3.0/3.1 specifications from existing code (FastAPI, NestJS auto-generate) or creates new specs with schema definitions, request/response examples, authentication schemes (Bearer, OAuth2, API Key), and validation rules. Supports Swagger UI, ReDoc, and Stoplight for documentation. Generates TypeScript/Python API clients and mock servers. Use when documenting REST APIs, creating API-first designs, generating client SDKs, enabling API testing tools (Postman, Insomnia), or setting up contract testing.
+allowed-tools: Read, Write, Grep, Edit
 ---
 
 # OpenAPI Spec Generator
 
-You generate OpenAPI 3.0 specifications from existing code or route definitions, creating comprehensive API documentation automatically.
+You generate comprehensive OpenAPI 3.0/3.1 specifications that document REST APIs and enable auto-generated clients, servers, and interactive documentation.
 
 ## When to use
-- After building REST API endpoints
-- When API documentation is outdated
-- Before generating API clients (for consumers)
-- Setting up API documentation site (Swagger UI, Redoc)
-- Preparing for API versioning
-- Onboarding new developers
-
-## What is OpenAPI?
-
-OpenAPI Specification (formerly Swagger) is a standard for describing REST APIs. It includes:
-- Available endpoints and operations
-- Request/response formats
-- Authentication methods
-- Rate limits and other metadata
-
-**Benefits:**
-- Auto-generated interactive documentation (Swagger UI)
-- Client SDK generation (api-client-generator skill)
-- API testing tools integration
+- Documenting existing REST API
+- Creating API-first designs (spec before code)
+- Generating interactive API documentation (Swagger UI)
+- Auto-generating API clients/SDKs
+- Validating API requests/responses
 - Contract testing between services
+- Enabling API mocking
 
-## Generation Approaches
+## OpenAPI 3.0/3.1 Basics
 
-### 1. From Code Annotations (Best)
-Frameworks with built-in OpenAPI support.
+### Core Components
 
-### 2. From Route Definitions
-Parse routes and infer types from code.
+**1. Info** - API metadata (title, version, description)
+**2. Servers** - Base URLs for different environments
+**3. Paths** - API endpoints and operations
+**4. Components** - Reusable schemas, parameters, responses
+**5. Security** - Authentication schemes
+**6. Tags** - Group operations logically
 
-### 3. From Runtime Introspection
-Run app and capture requests/responses.
+### Minimal OpenAPI Spec
 
-### 4. Manual Creation
-Write spec by hand (tedious, use as last resort).
-
-## Framework-Specific Generation
-
-### FastAPI (Python) - Built-in OpenAPI
-
-FastAPI automatically generates OpenAPI specs!
-
-**Code:**
-```python
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
-
-app = FastAPI(
-    title="My API",
-    description="API for managing users",
-    version="1.0.0"
-)
-
-class User(BaseModel):
-    id: int
-    email: str
-    name: str
-
-@app.get("/users/{user_id}", response_model=User, tags=["users"])
-async def get_user(user_id: int):
-    """Get a user by ID."""
-    # Implementation
-    return {"id": user_id, "email": "user@example.com", "name": "John"}
-
-@app.post("/users", response_model=User, status_code=201, tags=["users"])
-async def create_user(user: User):
-    """Create a new user."""
-    # Implementation
-    return user
-```
-
-**Get spec:**
-```bash
-# OpenAPI JSON available at /openapi.json
-curl http://localhost:8000/openapi.json > openapi.json
-
-# Interactive docs at /docs (Swagger UI)
-# Alternative docs at /redoc (ReDoc)
-```
-
-### Flask (Python) - Using flask-apispec
-
-**Install:**
-```bash
-pip install flask-apispec marshmallow
-```
-
-**Code:**
-```python
-from flask import Flask
-from flask_apispec import FlaskApiSpec, use_kwargs, marshal_with
-from marshmallow import Schema, fields
-
-app = Flask(__name__)
-app.config['APISPEC_SPEC'] = {
-    'title': 'My API',
-    'version': '1.0.0',
-    'openapi_version': '3.0.0'
-}
-docs = FlaskApiSpec(app)
-
-class UserSchema(Schema):
-    id = fields.Int(required=True)
-    email = fields.Str(required=True)
-    name = fields.Str(required=True)
-
-@app.route('/users/<int:user_id>', methods=['GET'])
-@marshal_with(UserSchema)
-def get_user(user_id):
-    """Get user by ID"""
-    return {'id': user_id, 'email': 'user@example.com', 'name': 'John'}
-
-docs.register(get_user)
-
-# Access spec at /api/swagger.json
-```
-
-### Express (Node.js) - Using swagger-jsdoc
-
-**Install:**
-```bash
-npm install swagger-jsdoc swagger-ui-express
-```
-
-**Code:**
-```javascript
-const express = require('express');
-const swaggerJsdoc = require('swagger-jsdoc');
-const swaggerUi = require('swagger-ui-express');
-
-const app = express();
-
-const swaggerOptions = {
-  definition: {
-    openapi: '3.0.0',
-    info: {
-      title: 'My API',
-      version: '1.0.0',
-      description: 'API for managing users',
-    },
-    servers: [{
-      url: 'http://localhost:3000',
-      description: 'Development server',
-    }],
-  },
-  apis: ['./routes/*.js'],
-};
-
-const swaggerSpec = swaggerJsdoc(swaggerOptions);
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
-
-/**
- * @openapi
- * /users/{userId}:
- *   get:
- *     summary: Get user by ID
- *     tags: [Users]
- *     parameters:
- *       - in: path
- *         name: userId
- *         required: true
- *         schema:
- *           type: integer
- *     responses:
- *       200:
- *         description: User object
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 id:
- *                   type: integer
- *                 email:
- *                   type: string
- *                 name:
- *                   type: string
- */
-app.get('/users/:userId', (req, res) => {
-  res.json({ id: req.params.userId, email: 'user@example.com', name: 'John' });
-});
-```
-
-### NestJS (TypeScript) - Built-in OpenAPI
-
-**Install:**
-```bash
-npm install @nestjs/swagger
-```
-
-**Code:**
-```typescript
-import { Controller, Get, Post, Body, Param } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
-
-class UserDto {
-  id: number;
-  email: string;
-  name: string;
-}
-
-@ApiTags('users')
-@Controller('users')
-export class UsersController {
-  @Get(':id')
-  @ApiOperation({ summary: 'Get user by ID' })
-  @ApiResponse({ status: 200, description: 'User found', type: UserDto })
-  @ApiResponse({ status: 404, description: 'User not found' })
-  async getUser(@Param('id') id: number): Promise<UserDto> {
-    return { id, email: 'user@example.com', name: 'John' };
-  }
-
-  @Post()
-  @ApiOperation({ summary: 'Create user' })
-  @ApiResponse({ status: 201, description: 'User created', type: UserDto })
-  async createUser(@Body() user: UserDto): Promise<UserDto> {
-    return user;
-  }
-}
-```
-
-**Main file:**
-```typescript
-import { NestFactory } from '@nestjs/core';
-import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
-import { AppModule } from './app.module';
-
-async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
-
-  const config = new DocumentBuilder()
-    .setTitle('My API')
-    .setDescription('API for managing users')
-    .setVersion('1.0')
-    .build();
-
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api-docs', app, document);
-
-  await app.listen(3000);
-}
-```
-
-### Django REST Framework (Python)
-
-**Install:**
-```bash
-pip install drf-spectacular
-```
-
-**Settings:**
-```python
-INSTALLED_APPS = [
-    # ...
-    'drf_spectacular',
-]
-
-REST_FRAMEWORK = {
-    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
-}
-
-SPECTACULAR_SETTINGS = {
-    'TITLE': 'My API',
-    'DESCRIPTION': 'API for managing users',
-    'VERSION': '1.0.0',
-}
-```
-
-**URLs:**
-```python
-from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
-
-urlpatterns = [
-    path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
-    path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
-]
-```
-
-**Views:**
-```python
-from rest_framework import viewsets
-from drf_spectacular.utils import extend_schema, OpenApiParameter
-
-class UserViewSet(viewsets.ModelViewSet):
-    queryset = User.objects.all()
-    serializer_class = UserSerializer
-
-    @extend_schema(
-        summary="Get user by ID",
-        responses={200: UserSerializer, 404: None},
-    )
-    def retrieve(self, request, *args, **kwargs):
-        return super().retrieve(request, *args, **kwargs)
-```
-
-## Manual Spec Creation
-
-When frameworks don't have good support, create spec manually:
-
-**Basic structure:**
 ```yaml
-openapi: 3.0.0
+openapi: 3.0.3
 info:
   title: My API
-  description: API for managing users
   version: 1.0.0
-  contact:
-    name: API Support
-    email: api@example.com
-
+  description: A simple API
 servers:
   - url: https://api.example.com/v1
-    description: Production server
-  - url: http://localhost:8000
-    description: Development server
-
-tags:
-  - name: users
-    description: User management operations
-
 paths:
-  /users/{userId}:
+  /users:
     get:
-      summary: Get user by ID
-      description: Retrieve a single user by their unique identifier
-      operationId: getUserById
-      tags:
-        - users
-      parameters:
-        - name: userId
-          in: path
-          required: true
-          description: Unique user identifier
-          schema:
-            type: integer
-            minimum: 1
+      summary: List users
       responses:
         '200':
-          description: Successful response
+          description: Success
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/User'
-        '404':
-          description: User not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500':
-          description: Internal server error
-
-  /users:
-    post:
-      summary: Create user
-      description: Create a new user account
-      operationId: createUser
-      tags:
-        - users
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateUserRequest'
-      responses:
-        '201':
-          description: User created successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/User'
-        '400':
-          description: Invalid input
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
 components:
   schemas:
     User:
@@ -394,239 +58,440 @@ components:
       required:
         - id
         - email
-        - name
       properties:
         id:
-          type: integer
-          example: 1
-          description: Unique user identifier
+          type: string
+          format: uuid
         email:
           type: string
           format: email
-          example: user@example.com
-          description: User's email address
         name:
           type: string
-          example: John Doe
-          description: User's full name
-        createdAt:
-          type: string
-          format: date-time
-          example: "2025-01-15T10:30:00Z"
-          description: Account creation timestamp
+```
 
-    CreateUserRequest:
+## Complete Implementation Guides
+
+For framework-specific spec generation and advanced patterns:
+
+**FastAPI (Python)** → `examples/fastapi-openapi.md`
+- Auto-generated specs
+- Pydantic model integration
+- Custom examples
+- Security schemes
+
+**Express (Node.js)** → `examples/express-openapi.md`
+- swagger-jsdoc
+- tsoa for TypeScript
+- Decorators and annotations
+
+**NestJS (TypeScript)** → `examples/nestjs-openapi.md`
+- @nestjs/swagger
+- Auto-generated from decorators
+- CLI plugin
+
+**Patterns & Best Practices** → `reference/openapi-patterns.md`
+- Pagination
+- Filtering/sorting
+- Error responses
+- Versioning strategies
+
+## Quick Start: FastAPI (Auto-Generated)
+
+FastAPI generates OpenAPI specs automatically:
+
+```python
+from fastapi import FastAPI
+from pydantic import BaseModel
+
+app = FastAPI(
+    title="My API",
+    version="1.0.0",
+    description="API description",
+)
+
+class User(BaseModel):
+    id: str
+    email: str
+    name: str | None = None
+
+@app.get("/users", response_model=list[User], tags=["users"])
+async def list_users():
+    """List all users."""
+    return []
+
+@app.post("/users", response_model=User, status_code=201, tags=["users"])
+async def create_user(user: User):
+    """Create a new user."""
+    return user
+
+# Spec available at /openapi.json
+# Swagger UI at /docs
+# ReDoc at /redoc
+```
+
+## Quick Start: Manual YAML Spec
+
+### Step 1: Define Info & Servers
+
+```yaml
+openapi: 3.0.3
+info:
+  title: E-commerce API
+  version: 1.0.0
+  description: API for managing products and orders
+  contact:
+    name: API Support
+    email: support@example.com
+  license:
+    name: MIT
+servers:
+  - url: https://api.example.com/v1
+    description: Production
+  - url: https://staging-api.example.com/v1
+    description: Staging
+```
+
+### Step 2: Define Schemas (Components)
+
+```yaml
+components:
+  schemas:
+    Product:
       type: object
       required:
-        - email
+        - id
         - name
+        - price
       properties:
-        email:
+        id:
           type: string
-          format: email
-          example: newuser@example.com
+          format: uuid
+          example: "123e4567-e89b-12d3-a456-426614174000"
         name:
           type: string
-          example: Jane Doe
+          minLength: 1
+          maxLength: 200
+          example: "Laptop"
+        price:
+          type: number
+          format: float
+          minimum: 0
+          example: 999.99
+        description:
+          type: string
+          example: "High-performance laptop"
 
     Error:
       type: object
+      required:
+        - code
+        - message
       properties:
         code:
           type: string
-          example: USER_NOT_FOUND
         message:
           type: string
-          example: The requested user was not found
+        details:
+          type: object
+```
 
+### Step 3: Define Paths
+
+```yaml
+paths:
+  /products:
+    get:
+      summary: List products
+      tags:
+        - products
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Product'
+                  page:
+                    type: integer
+                  total:
+                    type: integer
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    post:
+      summary: Create product
+      tags:
+        - products
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Product'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+```
+
+### Step 4: Add Security
+
+```yaml
+components:
   securitySchemes:
     bearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
-
-security:
-  - bearerAuth: []
+    apiKey:
+      type: apiKey
+      in: header
+      name: X-API-Key
 ```
 
-## Generating from Existing Code
+## Common Patterns
 
-If your framework doesn't have OpenAPI support, generate by analyzing routes:
+### Pagination
 
-**Step 1: Extract routes**
-```bash
-# Express: Find route definitions
-grep -rn "app\.\(get\|post\|put\|delete\|patch\)" routes/ > routes.txt
-
-# Flask: Find route decorators
-grep -rn "@app.route\|@bp.route" . > routes.txt
-```
-
-**Step 2: Analyze route handlers**
-```bash
-# Find handler functions
-for route in $(cat routes.txt); do
-  # Extract function signature
-  # Identify request/response types
-  # Generate OpenAPI path object
-done
-```
-
-**Step 3: Infer schemas from types**
-```python
-# Python: Use type hints
-def create_user(user: CreateUserRequest) -> User:
-    # Types can be converted to OpenAPI schemas
-```
-
-```typescript
-// TypeScript: Use interfaces
-interface User {
-  id: number;
-  email: string;
-  name: string;
-}
-```
-
-## Setting Up Documentation UI
-
-### Swagger UI
-
-**Docker:**
 ```yaml
-# docker-compose.yml
-version: '3.8'
-services:
-  swagger-ui:
-    image: swaggerapi/swagger-ui
-    ports:
-      - "8080:8080"
-    environment:
-      SWAGGER_JSON: /app/openapi.json
-    volumes:
-      - ./openapi.json:/app/openapi.json
+components:
+  parameters:
+    PageParam:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    LimitParam:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+
+  schemas:
+    PaginatedResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items: {}
+        page:
+          type: integer
+        limit:
+          type: integer
+        total:
+          type: integer
+        hasMore:
+          type: boolean
 ```
 
-**Run:**
-```bash
-docker-compose up swagger-ui
-# Access at http://localhost:8080
-```
+### Error Responses
 
-### ReDoc
-
-**Docker:**
 ```yaml
-services:
-  redoc:
-    image: redocly/redoc
-    ports:
-      - "8080:80"
-    environment:
-      SPEC_URL: /openapi.json
-    volumes:
-      - ./openapi.json:/usr/share/nginx/html/openapi.json
+components:
+  responses:
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: "NOT_FOUND"
+            message: "Resource not found"
+
+    ValidationError:
+      description: Validation failed
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              code:
+                type: string
+              message:
+                type: string
+              details:
+                type: object
+                additionalProperties:
+                  type: string
+          example:
+            code: "VALIDATION_ERROR"
+            message: "Invalid input"
+            details:
+              email: "Invalid email format"
 ```
 
-## Validation and Testing
+### Filtering
 
-**Validate spec:**
+```yaml
+paths:
+  /products:
+    get:
+      parameters:
+        - name: category
+          in: query
+          schema:
+            type: string
+            enum: [electronics, clothing, books]
+        - name: minPrice
+          in: query
+          schema:
+            type: number
+        - name: maxPrice
+          in: query
+          schema:
+            type: number
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [price_asc, price_desc, name_asc, name_desc]
+```
+
+## Tools & Validation
+
+### Validate Spec
+
 ```bash
-# Using openapi-generator-cli
-docker run --rm -v ${PWD}:/local openapitools/openapi-generator-cli validate -i /local/openapi.json
+# Swagger Editor (online)
+# https://editor.swagger.io
 
-# Using swagger-cli
-npx swagger-cli validate openapi.json
+# CLI validation
+npm install -g @apidevtools/swagger-cli
+swagger-cli validate openapi.yaml
+
+# OpenAPI Generator CLI
+npm install -g @openapitools/openapi-generator-cli
+openapi-generator-cli validate -i openapi.yaml
 ```
 
-**Generate sample requests:**
+### Generate Interactive Docs
+
 ```bash
-# Using openapi-examples-validator
-npx openapi-examples-validator openapi.json
+# Swagger UI
+npx serve-swagger-ui openapi.yaml
+
+# ReDoc
+npx redoc-cli serve openapi.yaml
+
+# Docker
+docker run -p 8080:8080 -e SWAGGER_JSON=/openapi.yaml -v $(pwd):/usr/share/nginx/html swaggerapi/swagger-ui
 ```
 
-## Instructions
+### Generate Clients/Servers
 
-1. **Identify framework:**
-   - Detect which framework is used (FastAPI, Express, Flask, etc.)
-   - Check if it has built-in OpenAPI support
+```bash
+# Generate TypeScript client
+openapi-generator-cli generate -i openapi.yaml -g typescript-axios -o ./client
 
-2. **If built-in support exists:**
-   - Add necessary annotations/decorators
-   - Configure OpenAPI settings
-   - Generate spec via framework
+# Generate Python server (FastAPI)
+openapi-generator-cli generate -i openapi.yaml -g python-fastapi -o ./server
 
-3. **If no built-in support:**
-   - Extract routes from code
-   - Infer request/response types
-   - Build OpenAPI spec manually or with tools
+# Generate Go client
+openapi-generator-cli generate -i openapi.yaml -g go -o ./client
+```
 
-4. **Enrich the spec:**
-   - Add descriptions and examples
-   - Document authentication
-   - Add error responses
-   - Include rate limits if applicable
+## Examples & Documentation
 
-5. **Set up documentation UI:**
-   - Deploy Swagger UI or ReDoc
-   - Make accessible to developers
+### Request/Response Examples
 
-6. **Validate:**
-   - Run validation tools
-   - Test in Swagger UI
-   - Ensure examples work
+```yaml
+paths:
+  /users:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+            examples:
+              minimal:
+                value:
+                  email: "user@example.com"
+              complete:
+                value:
+                  email: "user@example.com"
+                  name: "John Doe"
+                  age: 30
+      responses:
+        '201':
+          content:
+            application/json:
+              examples:
+                success:
+                  value:
+                    id: "123e4567-e89b-12d3-a456-426614174000"
+                    email: "user@example.com"
+                    name: "John Doe"
+```
 
-## Output Artifacts
+### Rich Descriptions
 
-- `openapi.json` or `openapi.yaml` - The spec file
-- Documentation UI setup (Docker Compose or similar)
-- README with links to docs
+Use markdown in descriptions for filtering, sorting, rate limits, and usage examples.
 
 ## Best Practices
 
-✅ **DO:**
-- Include examples for all endpoints
-- Document all error responses
-- Use semantic versioning for API
-- Keep spec in sync with code
-- Add authentication/authorization details
+**DO:** Use OpenAPI 3.0+, define reusable components ($ref), add examples, validate spec, version API, document all errors and security
 
-❌ **DON'T:**
-- Write spec before code (hard to maintain)
-- Skip response descriptions
-- Forget to version the API
-- Leave security undefined
-- Ignore deprecated endpoints
+**DON'T:** Duplicate schemas, skip examples, ignore validation, use vague descriptions, omit required fields
 
-## Integration with CI/CD
+## Instructions
 
-```yaml
-# .github/workflows/api-docs.yml
-name: Generate API Docs
-
-on: [push]
-
-jobs:
-  docs:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Generate OpenAPI spec
-        run: npm run generate:openapi
-
-      - name: Validate spec
-        run: npx swagger-cli validate openapi.json
-
-      - name: Deploy docs
-        run: |
-          docker build -t api-docs .
-          docker push registry.example.com/api-docs:latest
-```
+1. **Identify approach**: Auto-generate (FastAPI, NestJS), code annotations (swagger-jsdoc), or manual YAML
+2. **Define info & servers**: API title, version, description, server URLs
+3. **Create schemas**: Data models, common responses, reusable parameters in components
+4. **Document paths**: All endpoints with request/response schemas, examples, security
+5. **Add security schemes**: Bearer token, API key, OAuth2 - apply to operations
+6. **Validate spec**: swagger-cli validate, test in Swagger Editor
+7. **Generate documentation**: Swagger UI or ReDoc, deploy to docs site
+8. **Optional: Generate code**: API clients, server stubs, mock servers
 
 ## Constraints
 
-- Spec must be valid OpenAPI 3.0 format
-- Include all endpoints (no undocumented APIs)
-- Keep spec in sync with code (automate if possible)
-- Document breaking changes with version bumps
+- Must use OpenAPI 3.0+ (not Swagger 2.0)
+- Must validate spec before committing
+- Must include examples for all operations
+- Must document all response codes (including errors)
+- Must use components/$ref to avoid duplication
+- Should include descriptions for all operations
+- Should specify security requirements per operation
+- Should version the API in the URL
+- Must keep spec in sync with code
+- Should auto-generate when possible (FastAPI, NestJS)

@@ -1,6 +1,6 @@
 ---
 name: security-scanner
-description: Scans code for security vulnerabilities including SQL injection, XSS, hardcoded secrets, dependency vulnerabilities, and common security misconfigurations. Use during validation OR before deployment OR when investigating security issues OR as part of CI/CD.
+description: Scans code for security vulnerabilities using Snyk, Trivy, Bandit (Python), ESLint security plugins, or CodeQL. Detects SQL injection, XSS, CSRF, hardcoded secrets (API keys, passwords), dependency vulnerabilities (CVEs), insecure configurations, and OWASP Top 10 issues. Generates security reports with severity ratings and remediation steps. Use during code review, before deployment, in CI/CD pipelines, investigating security issues, passing security audits, or enforcing security best practices.
 allowed-tools: Read, Grep, Bash, Write
 ---
 

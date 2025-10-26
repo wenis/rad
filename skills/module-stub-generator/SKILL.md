@@ -1,6 +1,6 @@
 ---
 name: module-stub-generator
-description: Generates mock/stub implementations of module interfaces to unblock parallel development when modules have dependencies. Use when module dependencies create build blockers OR when module needs to build before its dependency is ready OR when testing modules in isolation.
+description: Generates configurable mock/stub implementations of module interfaces in TypeScript, Python, or Go to unblock parallel development when modules have dependencies. Creates interface-compliant stubs with predictable behavior, test helpers for configuration, and clear "DO NOT USE IN PRODUCTION" warnings. Allows modules to build and test against stubs while waiting for real implementations. Use when module dependencies create build blockers, testing modules in isolation without real dependencies, enabling truly parallel development, or creating test doubles for integration testing.
 allowed-tools: Read, Write
 ---
 
@@ -421,54 +421,14 @@ stubs/
 
 **README.md**:
 ```markdown
-# Module Stubs
+# Module Stubs ⚠️ DO NOT USE IN PRODUCTION
+Stub implementations for parallel development and testing.
 
-## Purpose
-These are stub implementations for parallel development.
-They allow modules to build and test before real implementations are ready.
+Development: import { PasswordValidatorStub } from './stubs/password-validator.stub'
+Testing: stub.setShouldValidate(false) to configure behavior
+Integration: Replace stub imports with real implementation
 
-## ⚠️ DO NOT USE IN PRODUCTION
-
-These stubs are for development and testing only.
-
-## How to Use
-
-### Development
-```typescript
-import { PasswordValidatorStub } from './stubs/password-validator.stub';
-
-// Use during development
-const validator = new PasswordValidatorStub();
-```
-
-### Testing
-```typescript
-describe('MyModule', () => {
-  it('should handle validation', () => {
-    const stub = new PasswordValidatorStub();
-    stub.setShouldValidate(false);  // Configure behavior
-
-    // Test your module
-    expect(() => myFunction(stub)).toThrow();
-  });
-});
-```
-
-### Integration
-After real implementation is ready:
-```typescript
-// Replace stub with real implementation
-- import { PasswordValidatorStub } from './stubs/...';
-+ import { PasswordValidator } from './auth/password';
-
-- const validator = new PasswordValidatorStub();
-+ const validator = new PasswordValidator();
-```
-
-## Available Stubs
-- `PasswordValidatorStub` - Mock password validation
-- `TokenManagerStub` - Mock JWT token management
-- `EmailServiceStub` - Mock email sending
+Available: PasswordValidatorStub, TokenManagerStub, EmailServiceStub
 ```
 
 ## Instructions

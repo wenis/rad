@@ -1,6 +1,6 @@
 ---
 name: commit-message-formatter
-description: Formats git commit messages following Conventional Commits standard. Analyzes staged changes and generates semantic, well-structured commit messages. Use when creating commits OR reviewing commit history.
+description: Formats git commit messages following Conventional Commits standard (feat, fix, docs, refactor, test, chore). Analyzes staged changes (git diff) to determine commit type, scope, and description. Generates semantic, well-structured messages compatible with semantic versioning and changelog generation. Includes breaking change notifications and references to issues. Use when creating commits, enforcing commit message standards, enabling automatic changelog generation, or preparing for semantic releases.
 allowed-tools: Read, Grep, Bash
 ---
 

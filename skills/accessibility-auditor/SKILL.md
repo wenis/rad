@@ -1,622 +1,412 @@
 ---
 name: accessibility-auditor
-description: Audits applications for WCAG 2.1 compliance including semantic HTML, keyboard navigation, ARIA attributes, color contrast, and screen reader support. Use during validation OR before deployment OR when adding new features OR after UI changes.
+description: Audits web applications for WCAG 2.1/2.2 Level AA/AAA compliance using axe-core, Lighthouse, and manual testing. Identifies and fixes issues with screen readers (NVDA, VoiceOver), keyboard navigation (Tab, Enter, Escape), color contrast (4.5:1 ratio), ARIA attributes, semantic HTML, and focus management. Generates compliance reports with issue severity and remediation steps. Use when ensuring ADA compliance, fixing accessibility bugs, preparing for VPAT/accessibility audits, implementing ARIA patterns, or building inclusive applications.
 allowed-tools: Read, Grep, Bash, Write
 ---
 
 # Accessibility Auditor
 
-You audit applications for accessibility issues and provide specific remediation guidance to achieve WCAG 2.1 AA compliance.
+You audit web applications for accessibility (a11y) compliance and provide specific fixes to make applications usable for everyone.
 
 ## When to use
-- Before deploying to production
-- During code review for UI changes
-- After adding new components or features
-- When preparing for accessibility audits
-- Investigating accessibility complaints
-- Setting up accessibility CI/CD checks
+- Building new features (ensure accessibility from start)
+- Fixing accessibility bugs
+- Preparing for WCAG compliance review
+- After accessibility audit findings
+- Before public launch
+- Improving keyboard navigation
+- Fixing screen reader issues
 
-## WCAG 2.1 Levels
+## WCAG Levels
 
-### Level A (Minimum)
-Basic accessibility features that must be present.
+**Level A** - Minimum (must have)
+**Level AA** - Recommended (industry standard)
+**Level AAA** - Enhanced (gold standard)
 
-### Level AA (Target)
-**Most common legal requirement**. Addresses major barriers.
+**Target: WCAG 2.1 Level AA** for most applications
 
-### Level AAA (Enhanced)
-Highest level, not always achievable for all content.
+## Quick Audit Tools
 
-**This skill targets WCAG 2.1 Level AA compliance.**
+### Automated Testing
 
-## Audit Categories
-
-### 1. Perceivable
-Users must be able to perceive the information.
-
-**Issues to check:**
-- Missing alt text on images
-- Poor color contrast
-- Missing captions for videos
-- Content only available through color
-
-### 2. Operable
-Users must be able to operate the interface.
-
-**Issues to check:**
-- Keyboard navigation broken
-- Focus order incorrect
-- Missing skip links
-- Keyboard traps
-
-### 3. Understandable
-Users must be able to understand the interface.
-
-**Issues to check:**
-- Confusing labels
-- Missing form validation messages
-- Unexpected behavior
-- Complex language without alternatives
-
-### 4. Robust
-Content must work with assistive technologies.
-
-**Issues to check:**
-- Invalid HTML
-- Missing ARIA labels
-- Incorrect ARIA roles
-- Broken screen reader announcements
-
-## Automated Checks
-
-### Using axe-core (JavaScript)
-
-**Install:**
 ```bash
+# axe-core (most popular)
 npm install -D @axe-core/cli
-```
+axe https://example.com
 
-**Run audit:**
-```bash
-# Audit a URL
-npx axe http://localhost:3000 --exit
-
-# Generate report
-npx axe http://localhost:3000 --save audit-report.json
-
-# Audit with specific rules
-npx axe http://localhost:3000 --rules color-contrast,aria-roles
-```
-
-**Programmatic usage:**
-```typescript
-// tests/accessibility.test.ts
-import { test, expect } from '@playwright/test';
-import AxeBuilder from '@axe-core/playwright';
-
-test('should not have accessibility violations', async ({ page }) => {
-  await page.goto('http://localhost:3000');
-
-  const accessibilityScanResults = await new AxeBuilder({ page }).analyze();
-
-  expect(accessibilityScanResults.violations).toEqual([]);
-});
-```
-
-### Using Pa11y
-
-**Install:**
-```bash
+# Pa11y
 npm install -g pa11y
+pa11y https://example.com
+
+# Lighthouse
+npx lighthouse https://example.com --only-categories=accessibility
+
+# WAVE (browser extension)
+# https://wave.webaim.org/extension/
 ```
 
-**Run:**
-```bash
-# Audit a page
-pa11y http://localhost:3000
+### Manual Testing Checklist
 
-# Generate JSON report
-pa11y http://localhost:3000 --reporter json > audit.json
+- [ ] Keyboard navigation (Tab, Enter, Escape, Arrow keys)
+- [ ] Screen reader (NVDA, JAWS, VoiceOver)
+- [ ] Color contrast (4.5:1 text, 3:1 UI components)
+- [ ] Focus indicators visible
+- [ ] Form labels and error messages
+- [ ] Alt text for images
+- [ ] Semantic HTML
+- [ ] ARIA labels where needed
 
-# Audit with specific standard
-pa11y http://localhost:3000 --standard WCAG2AA
-```
+## Complete Audit Guides
 
-### Using Lighthouse
+**React Accessibility** → `examples/react-a11y.md`
+- Component patterns
+- Testing with jest-axe
+- Common React issues
 
-**Run via CLI:**
-```bash
-lighthouse http://localhost:3000 --only-categories=accessibility --output=json --output-path=./audit.json
-```
+**Vue Accessibility** → `examples/vue-a11y.md`
+- Vue-specific patterns
+- Testing strategies
 
-**In Chrome DevTools:**
-1. Open DevTools (F12)
-2. Go to Lighthouse tab
-3. Check "Accessibility"
-4. Click "Generate report"
+**Testing Guide** → `reference/a11y-testing.md`
+- Automated testing
+- Screen reader testing
+- Keyboard testing
 
-## Manual Checks
+**WCAG Checklist** → `reference/wcag-checklist.md`
+- Complete WCAG 2.1 AA criteria
+- Common violations
+- Fix examples
 
-Automated tools catch ~30-40% of issues. Manual testing is critical.
+## Common Issues & Fixes
 
-### Keyboard Navigation
+### 1. Missing Alt Text
 
-**Test checklist:**
-- [ ] Tab through entire page in logical order
-- [ ] All interactive elements reachable
-- [ ] Focus indicator visible on all elements
-- [ ] Enter/Space activates buttons/links
-- [ ] Escape closes modals/dropdowns
-- [ ] Arrow keys navigate within components (tabs, menus)
-- [ ] No keyboard traps (can Tab out of everything)
-- [ ] Skip links work (skip to main content)
-
-**Common issues:**
+**Problem:**
 ```html
-<!-- BAD: div used as button -->
-<div onclick="handleClick()">Click me</div>
-
-<!-- GOOD: semantic button -->
-<button onclick="handleClick()">Click me</button>
-
-<!-- BAD: Missing tabindex for custom interactive element -->
-<div class="custom-button">Click</div>
-
-<!-- GOOD: Tabindex and role for custom element -->
-<div role="button" tabindex="0" class="custom-button">Click</div>
+<img src="profile.jpg">
 ```
 
-### Screen Reader Testing
-
-**Tools:**
-- **VoiceOver** (Mac): Cmd+F5
-- **NVDA** (Windows): Free, recommended
-- **JAWS** (Windows): Industry standard, paid
-
-**Test checklist:**
-- [ ] Page title announced
-- [ ] Headings read in order (h1, h2, h3...)
-- [ ] Images have descriptive alt text
-- [ ] Forms have associated labels
-- [ ] Error messages announced
-- [ ] Dynamic content changes announced
-- [ ] Links have meaningful text (not "click here")
-
-**Common issues:**
+**Fix:**
 ```html
-<!-- BAD: No label for input -->
-<input type="text" placeholder="Name" />
+<!-- Decorative image -->
+<img src="profile.jpg" alt="">
 
-<!-- GOOD: Explicit label -->
-<label for="name">Name</label>
-<input id="name" type="text" />
-
-<!-- BAD: Generic link text -->
-<a href="/learn-more">Click here</a>
-
-<!-- GOOD: Descriptive link text -->
-<a href="/learn-more">Learn more about our pricing</a>
-
-<!-- BAD: Image without alt text -->
-<img src="logo.png" />
-
-<!-- GOOD: Image with alt text -->
-<img src="logo.png" alt="Company logo" />
-
-<!-- GOOD: Decorative image (empty alt) -->
-<img src="decorative-pattern.png" alt="" />
+<!-- Informative image -->
+<img src="profile.jpg" alt="Jane Doe, Software Engineer">
 ```
 
-### Color Contrast
+### 2. Poor Color Contrast
 
-**WCAG AA Requirements:**
-- Normal text: 4.5:1 minimum
-- Large text (18pt+ or 14pt+ bold): 3:1 minimum
-- UI components: 3:1 minimum
-
-**Tools:**
-```bash
-# Use axe or Pa11y for automated checks
-pa11y http://localhost:3000 --standard WCAG2AA --reporter json | grep "color-contrast"
-
-# Manual check with browser extension
-# Install: WCAG Color Contrast Checker
-```
-
-**Common issues:**
+**Problem:**
 ```css
-/* BAD: Insufficient contrast */
-.text {
-  color: #767676; /* Gray on white = 4.4:1 */
-  background: #ffffff;
-}
-
-/* GOOD: Sufficient contrast */
-.text {
-  color: #595959; /* Gray on white = 7:1 */
-  background: #ffffff;
-}
-
-/* BAD: Color-only indication */
-.error {
-  color: red;
-}
-
-/* GOOD: Color + icon/text */
-.error {
-  color: red;
-}
-.error::before {
-  content: "⚠️ Error: ";
-}
+/* Light gray on white - 2.3:1 ratio (fails) */
+color: #999;
+background: #fff;
 ```
 
-### Focus Management
-
-**Test checklist:**
-- [ ] Focus indicator visible (outline or custom style)
-- [ ] Focus trapped in modals
-- [ ] Focus restored after modal close
-- [ ] Focus moves to new content after dynamic updates
-
-**Common issues:**
+**Fix:**
 ```css
-/* BAD: Removing focus outline entirely */
-*:focus {
-  outline: none;
-}
-
-/* GOOD: Custom focus style */
-*:focus-visible {
-  outline: 2px solid #2563eb;
-  outline-offset: 2px;
-}
+/* Dark gray on white - 4.7:1 ratio (passes AA) */
+color: #666;
+background: #fff;
 ```
 
-```typescript
-// BAD: No focus management in modal
-function Modal({ isOpen, children }) {
-  if (!isOpen) return null;
-  return <div>{children}</div>;
-}
+**Tool:** https://webaim.org/resources/contrastchecker/
 
-// GOOD: Focus trap in modal
-import { useRef, useEffect } from 'react';
-import FocusTrap from 'focus-trap-react';
+### 3. Missing Form Labels
 
-function Modal({ isOpen, onClose, children }) {
-  const closeButtonRef = useRef<HTMLButtonElement>(null);
-
-  useEffect(() => {
-    if (isOpen) {
-      closeButtonRef.current?.focus();
-    }
-  }, [isOpen]);
-
-  if (!isOpen) return null;
-
-  return (
-    <FocusTrap>
-      <div role="dialog" aria-modal="true">
-        <button ref={closeButtonRef} onClick={onClose}>
-          Close
-        </button>
-        {children}
-      </div>
-    </FocusTrap>
-  );
-}
-```
-
-### ARIA Usage
-
-**Rules:**
-1. Use semantic HTML first (ARIA should be rare)
-2. No ARIA is better than bad ARIA
-3. ARIA doesn't change behavior, only how screen readers announce
-
-**Common patterns:**
+**Problem:**
 ```html
-<!-- Form with live validation -->
-<form>
-  <label for="email">Email</label>
-  <input
-    id="email"
-    type="email"
-    aria-describedby="email-error"
-    aria-invalid="true"
-  />
-  <p id="email-error" role="alert">
-    Please enter a valid email address
-  </p>
-</form>
-
-<!-- Loading state -->
-<button aria-busy="true" aria-live="polite">
-  Loading...
-</button>
-
-<!-- Tab component -->
-<div role="tablist">
-  <button
-    role="tab"
-    aria-selected="true"
-    aria-controls="panel-1"
-    id="tab-1"
-  >
-    Tab 1
-  </button>
-  <button
-    role="tab"
-    aria-selected="false"
-    aria-controls="panel-2"
-    id="tab-2"
-  >
-    Tab 2
-  </button>
-</div>
-<div role="tabpanel" id="panel-1" aria-labelledby="tab-1">
-  Content 1
-</div>
-```
-
-## Audit Report Format
-
-```markdown
-# Accessibility Audit Report
-
-## Summary
-- **Date**: 2025-01-24
-- **URL/Pages Audited**: http://localhost:3000/
-- **Tools Used**: axe-core, Pa11y, manual testing
-- **WCAG Level**: AA
-- **Total Issues**: 23 (8 critical, 10 serious, 5 moderate)
-
-## Critical Issues (Must Fix)
-
-### 1. Missing Form Labels
-**WCAG**: 3.3.2 Labels or Instructions (Level A)
-**Impact**: High - Users cannot identify form fields
-**Pages**: Contact form, Login page
-
-**Issue:**
-```html
-<input type="email" placeholder="Email" />
+<input type="email" placeholder="Email">
 ```
 
 **Fix:**
 ```html
 <label for="email">Email</label>
-<input id="email" type="email" />
+<input type="email" id="email" name="email">
+
+<!-- Or with aria-label -->
+<input type="email" aria-label="Email address">
 ```
 
-**Files to update:**
-- `src/components/ContactForm.tsx:45`
-- `src/pages/login.tsx:23`
+### 4. Button Without Accessible Name
 
----
-
-### 2. Insufficient Color Contrast
-**WCAG**: 1.4.3 Contrast (Level AA)
-**Impact**: High - Text unreadable for low vision users
-**Contrast Ratio**: 3.2:1 (requires 4.5:1)
-
-**Issue:**
-```css
-.subtitle {
-  color: #999999; /* Gray on white */
-}
+**Problem:**
+```html
+<button><i class="icon-close"></i></button>
 ```
 
 **Fix:**
-```css
-.subtitle {
-  color: #595959; /* Darker gray = 7:1 contrast */
-}
+```html
+<button aria-label="Close dialog">
+  <i class="icon-close" aria-hidden="true"></i>
+</button>
 ```
 
-**Files to update:**
-- `src/styles/typography.css:34`
-- `src/components/Hero.tsx:12` (inline style)
+### 5. No Keyboard Support
 
----
-
-### 3. Keyboard Navigation Broken
-**WCAG**: 2.1.1 Keyboard (Level A)
-**Impact**: Critical - Cannot use site with keyboard only
-
-**Issue:**
-Custom dropdown not keyboard accessible.
+**Problem:**
+```jsx
+<div onClick={handleClick}>Click me</div>
+```
 
 **Fix:**
-```typescript
-// Add keyboard handlers
+```jsx
+<button onClick={handleClick}>Click me</button>
+
+<!-- Or if div required -->
 <div
   role="button"
   tabIndex={0}
   onClick={handleClick}
   onKeyDown={(e) => {
     if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
       handleClick();
     }
   }}
 >
-  Open dropdown
+  Click me
 </div>
 ```
 
-**Files to update:**
-- `src/components/Dropdown.tsx:67`
+### 6. Missing Focus Indicator
 
-## Serious Issues (Should Fix)
-
-### 4. Images Without Alt Text
-**WCAG**: 1.1.1 Non-text Content (Level A)
-**Count**: 12 images
-**Impact**: Screen readers cannot describe images
-
-**Files:**
-- `src/components/Gallery.tsx` - 8 images
-- `src/pages/about.tsx` - 4 images
-
-**Fix:**
-Add descriptive alt text:
-```html
-<img src="team.jpg" alt="Our team at the 2024 conference" />
-```
-
----
-
-### 5. Missing Page Title
-**WCAG**: 2.4.2 Page Titled (Level A)
-**Pages**: Dashboard, Settings
-**Impact**: Users cannot identify page in browser tabs
-
-**Fix:**
-```typescript
-// Next.js
-import Head from 'next/head';
-
-export default function Dashboard() {
-  return (
-    <>
-      <Head>
-        <title>Dashboard - MyApp</title>
-      </Head>
-      {/* Page content */}
-    </>
-  );
+**Problem:**
+```css
+button:focus {
+  outline: none; /* Don't do this! */
 }
 ```
 
-## Moderate Issues (Nice to Fix)
+**Fix:**
+```css
+button:focus-visible {
+  outline: 2px solid #0066cc;
+  outline-offset: 2px;
+}
+```
 
-### 6. Inconsistent Heading Hierarchy
-**WCAG**: 1.3.1 Info and Relationships (Level A)
-**Impact**: Moderate - Screen reader navigation harder
+### 7. Non-Semantic HTML
 
-**Issue:**
-Skipping from h1 to h3 (missing h2).
+**Problem:**
+```html
+<div class="header">
+  <div class="nav">
+    <div class="link">Home</div>
+  </div>
+</div>
+```
 
 **Fix:**
-Use proper heading hierarchy (h1 → h2 → h3).
-
-## Testing Checklist
-
-### Automated Tests
-- [x] axe-core: 15 issues found
-- [x] Pa11y: 18 issues found
-- [x] Lighthouse: Score 67/100
-
-### Manual Tests
-- [x] Keyboard navigation (8 issues)
-- [x] Screen reader (VoiceOver) (5 issues)
-- [x] Color contrast (3 issues)
-- [ ] Zoom to 200% (pending)
-- [ ] High contrast mode (pending)
-
-## Recommendations by Priority
-
-### Immediate (Before Launch)
-1. Add labels to all form inputs
-2. Fix color contrast issues
-3. Implement keyboard navigation for custom components
-4. Add alt text to all images
-5. Add page titles
-
-### Short-term (Next Sprint)
-1. Fix heading hierarchy
-2. Add skip links
-3. Implement focus management in modals
-4. Add ARIA labels where needed
-5. Test with multiple screen readers
-
-### Long-term (Continuous)
-1. Set up automated accessibility tests in CI
-2. Add accessibility to design review process
-3. Train team on accessibility best practices
-4. Conduct regular audits (quarterly)
-5. Add accessibility section to component documentation
-
-## Testing Setup for CI/CD
-
-```yaml
-# .github/workflows/accessibility.yml
-name: Accessibility Tests
-
-on: [push, pull_request]
-
-jobs:
-  a11y:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build
-        run: npm run build
-
-      - name: Start server
-        run: npm start &
-
-      - name: Wait for server
-        run: npx wait-on http://localhost:3000
-
-      - name: Run axe tests
-        run: npx @axe-core/cli http://localhost:3000 --exit
-
-      - name: Run Pa11y
-        run: npx pa11y-ci --sitemap http://localhost:3000/sitemap.xml
+```html
+<header>
+  <nav>
+    <a href="/">Home</a>
+  </nav>
+</header>
 ```
 
-## Resources
-- [WCAG 2.1 Guidelines](https://www.w3.org/WAI/WCAG21/quickref/)
-- [axe DevTools](https://www.deque.com/axe/devtools/)
-- [WebAIM](https://webaim.org/)
-- [A11y Project Checklist](https://www.a11yproject.com/checklist/)
+### 8. Missing Page Title
+
+**Problem:**
+```html
+<title>Page</title>
 ```
 
-## Instructions
+**Fix:**
+```html
+<title>User Profile - My App</title>
 
-1. **Run automated tools**: axe, Pa11y, Lighthouse
-2. **Parse results**: Extract violations by severity
-3. **Manual testing**:
-   - Keyboard navigation
-   - Screen reader testing
-   - Color contrast checks
-   - Focus management
-4. **Categorize issues**: Critical, serious, moderate
-5. **Provide fixes**: Specific code changes for each issue
-6. **Generate report**: Structured markdown with priorities
-7. **Create test setup**: CI/CD configuration for automation
+<!-- React -->
+<Helmet>
+  <title>User Profile - My App</title>
+</Helmet>
+```
+
+## ARIA Patterns
+
+### Dialog/Modal
+
+```jsx
+<div
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="dialog-title"
+>
+  <h2 id="dialog-title">Confirm Action</h2>
+  <p>Are you sure?</p>
+  <button onClick={confirm}>Yes</button>
+  <button onClick={cancel}>Cancel</button>
+</div>
+```
+
+### Skip Link
+
+```html
+<a href="#main-content" class="skip-link">
+  Skip to main content
+</a>
+
+<main id="main-content">
+  <!-- Content -->
+</main>
+
+<style>
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 0;
+}
+.skip-link:focus {
+  top: 0;
+}
+</style>
+```
+
+### Live Region
+
+```jsx
+<div aria-live="polite" aria-atomic="true">
+  {successMessage}
+</div>
+
+<!-- For urgent messages -->
+<div aria-live="assertive">
+  {errorMessage}
+</div>
+```
+
+### Tabs
+
+```jsx
+<div role="tablist">
+  <button
+    role="tab"
+    aria-selected={activeTab === 'home'}
+    aria-controls="home-panel"
+  >
+    Home
+  </button>
+</div>
+<div role="tabpanel" id="home-panel">
+  Content
+</div>
+```
+
+## Testing
+
+### Automated Testing
+
+```javascript
+// Jest + jest-axe
+import { axe, toHaveNoViolations } from 'jest-axe';
+
+expect.extend(toHaveNoViolations);
+
+test('has no a11y violations', async () => {
+  const { container } = render(<App />);
+  const results = await axe(container);
+  expect(results).toHaveNoViolations();
+});
+```
+
+### Keyboard Testing
+
+```
+Tab - Move forward
+Shift+Tab - Move backward
+Enter - Activate button/link
+Space - Activate button, toggle checkbox
+Escape - Close dialog/menu
+Arrow keys - Navigate menu/tabs/radio buttons
+```
+
+### Screen Reader Testing
+
+**Windows:** NVDA (free)
+**Mac:** VoiceOver (built-in, Cmd+F5)
+**Mobile:** TalkBack (Android), VoiceOver (iOS)
 
 ## Best Practices
 
 ✅ **DO:**
-- Test with real assistive technologies
-- Involve users with disabilities in testing
-- Fix issues at the source (design/component library)
-- Automate what you can
-- Make accessibility part of definition of done
-- Test on real devices (mobile screen readers)
+- Use semantic HTML (`<button>`, `<nav>`, `<main>`)
+- Provide text alternatives for non-text content
+- Ensure 4.5:1 color contrast for text
+- Support keyboard navigation
+- Add focus indicators
+- Use ARIA labels when needed
+- Test with screen readers
+- Test keyboard-only navigation
+- Run automated tests (axe, Pa11y)
 
 ❌ **DON'T:**
-- Rely only on automated tools (catch ~30-40%)
-- Use ARIA when semantic HTML works
-- Remove focus indicators without replacement
-- Assume "accessible" means "ugly"
-- Skip keyboard testing
-- Ignore color-blind users
+- Use `div` for buttons (`<div onclick>`)
+- Remove focus outlines without replacement
+- Use color alone to convey information
+- Skip heading levels (h1 → h3)
+- Use placeholder as label
+- Forget alt text on images
+- Auto-play audio/video
+- Rely only on automated tests
+
+## Tools
+
+**Automated Testing:**
+- axe-core, Pa11y, Lighthouse
+- jest-axe (React testing)
+- eslint-plugin-jsx-a11y
+
+**Manual Testing:**
+- WAVE browser extension
+- Color contrast checker
+- Screen readers (NVDA, VoiceOver)
+- Keyboard navigation
+
+**Browser DevTools:**
+- Chrome DevTools > Accessibility panel
+- Firefox Accessibility Inspector
+
+## Instructions
+
+1. **Run automated audit**
+   - axe, Pa11y, or Lighthouse
+   - Identify violations
+
+2. **Fix automated issues**
+   - Missing alt text
+   - Color contrast
+   - Form labels
+   - ARIA attributes
+
+3. **Manual keyboard test**
+   - Tab through page
+   - Activate all interactive elements
+   - Ensure focus visible
+
+4. **Screen reader test**
+   - Navigate with screen reader
+   - Verify announcements
+   - Check reading order
+
+5. **Verify fixes**
+   - Re-run automated tests
+   - Test with real users if possible
+
+6. **Prevent regressions**
+   - Add jest-axe tests
+   - Enable ESLint a11y rules
+   - Include in CI/CD
 
 ## Constraints
 
-- Must test with keyboard only (no mouse)
-- Must test with at least one screen reader
-- Must check color contrast programmatically
-- Must validate HTML before ARIA audit
-- Report must include specific code fixes
-- Must prioritize by user impact, not tool severity
+- Must meet WCAG 2.1 Level AA minimum
+- Must support keyboard navigation
+- Must have visible focus indicators
+- Must provide text alternatives for images
+- Must maintain 4.5:1 color contrast for text
+- Must use semantic HTML where possible
+- Must test with screen readers
+- Must not rely on color alone
+- Should run automated tests in CI
+- Must not auto-play audio/video
