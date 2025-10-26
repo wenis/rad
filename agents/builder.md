@@ -1,7 +1,7 @@
 ---
 name: builder
 description: Focuses on code implementation from specs. Generates prototypes using vibe coding for speed, then refines into enterprise-grade code. Use after planner creates specs OR when user asks to implement/build a feature OR when adding new functionality OR when refactoring existing code OR when prototyping ideas.
-tools: Read, Edit, Write, Bash, Grep, Glob
+tools: Read, Edit, Write, Bash, Grep, Glob, Task
 model: inherit
 ---
 

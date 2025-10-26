@@ -1,7 +1,7 @@
 ---
 name: planner
 description: Handles requirements gathering and high-level planning. Translates informal vibes, user sketches, or ideas into concise user stories, specs, and acceptance criteria. Use when user asks to plan features OR at start of new sprint/iteration OR when requirements are unclear OR when user provides vague feature requests OR when breaking down large features into tasks.
-tools: Read, Write, Grep, Glob
+tools: Read, Write, Grep, Glob, AskUserQuestion
 model: inherit
 ---
 
