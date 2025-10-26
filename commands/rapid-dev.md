@@ -44,47 +44,34 @@ The builder-validator feedback loop runs automatically (max 3 iterations).
 
 ### Phase 2: Implementation
 
-4. **Detect build strategy from spec:**
-   - Read the spec at `docs/specs/[feature-name].md`
-   - Look for "Execution Strategy" or "Build Plan" section
-   - Check if it says "Sequential" or "Parallel: N modules in M phases"
+4. **Invoke the builder agent with minimal prompt:**
 
-5. **Invoke the builder agent with explicit mode instruction:**
+   **CRITICAL:** Use a minimal prompt that allows the builder to perform its own mode detection. DO NOT tell the builder what mode to use or how to implement.
 
-   **IF spec says "Sequential: Single builder":**
+   **Correct invocation (for ALL builds):**
    ```
-   Invoke builder agent with:
-   "Build the [feature-name] feature from docs/specs/[feature-name].md
-
-   Mode: Direct Build (sequential)
-
-   Read the spec and implement the feature sequentially."
+   Read the spec at docs/specs/[feature-name].md and implement the feature.
    ```
 
-   **IF spec says "Parallel: N modules in M phases":**
-   ```
-   Invoke builder agent with:
-   "Build the [feature-name] feature from docs/specs/[feature-name].md
+   **DO NOT add any of these:**
+   - ❌ "Mode: Orchestration" or "Mode: Direct Build" (builder detects this)
+   - ❌ "You MUST orchestrate..." (bypasses builder's logic)
+   - ❌ "Build modules A, B, C..." (too prescriptive)
+   - ❌ "DO NOT build everything yourself..." (builder knows this)
 
-   Mode: Orchestration (REQUIRED)
+5. **Watch for builder's mode announcement:**
+   - Builder will announce: "📋 BUILD PLAN DETECTED"
+   - Builder will state: "Strategy: Sequential" or "Strategy: Parallel (N modules in M phases)"
+   - Builder will state: "Mode: Direct Build" or "Mode: Orchestration"
+   - **If builder doesn't announce within 30 seconds:** Something is wrong, stop and investigate
 
-   You MUST orchestrate parallel builders according to the build plan.
-   The spec specifies a parallel build strategy - you must spawn multiple
-   builder agents for each phase as defined in the build plan.
-
-   DO NOT build everything yourself sequentially."
-   ```
-
-   **Important:**
-   - The builder will announce its strategy when it starts
-   - Verify the announcement matches the spec's strategy
-   - If builder doesn't announce, prompt it to do so
-
-6. **Verify orchestration (for parallel builds):**
-   - Watch for the builder's strategy announcement
-   - For parallel builds, you should see: "Spawning X parallel builders for Phase 1..."
-   - If you don't see parallel builder spawning within 1 minute, stop and investigate
-   - Common issue: Builder may need explicit reminder to orchestrate
+6. **Verify orchestration (for parallel builds only):**
+   - If builder announces "Mode: Orchestration", watch for:
+     - "Spawning X parallel builders for Phase 1..."
+     - Multiple Task tool calls in a single message
+   - If builder uses Write/Edit tools instead of Task tool:
+     - **STOP** - Builder failed to enter orchestration mode
+     - Investigate why (likely a prompt issue)
 
 7. **Review the code with user if needed**
 
@@ -179,7 +166,13 @@ Planner creates:
 
 **Phase 2: Building**
 ```
-Invoking builder agent...
+Invoking builder agent with:
+"Read the spec at docs/specs/user-authentication.md and implement the feature."
+
+Builder announces:
+📋 BUILD PLAN DETECTED
+Strategy: Sequential (single builder)
+Mode: Direct Build
 
 Builder implements:
 - src/auth/password.py (validation, hashing)

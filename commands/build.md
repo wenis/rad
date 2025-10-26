@@ -26,10 +26,22 @@ The builder agent will:
 
 ## Instructions
 
-Invoke the **builder** agent with:
-- Path to spec file (if one exists)
-- Feature description
-- Any constraints or preferences
+**CRITICAL:** When invoking the builder agent, you MUST use a minimal prompt that allows the builder to follow its own mode detection process. DO NOT give implementation instructions.
+
+**Correct approach - Invoke builder agent with minimal prompt:**
+
+```
+Read the spec at {spec_path} and implement the feature.
+
+The builder agent will handle mode detection (sequential vs parallel orchestration) autonomously.
+```
+
+**WRONG approach - DO NOT do this:**
+```
+❌ Implement the feature by doing X, Y, Z... (too prescriptive)
+❌ Begin implementation now... (bypasses mode detection)
+❌ Create files A, B, C... (skips orchestration)
+```
 
 The builder will implement the feature and report back with:
 - Files created/modified
@@ -41,14 +53,21 @@ The builder will implement the feature and report back with:
 
 If a spec exists (e.g., from `/plan`):
 ```
-Builder: Read spec at docs/specs/user-profile.md and implement the feature
+Read the spec at docs/specs/user-profile.md and implement the feature.
 ```
+
+**Let the builder agent handle everything else** - it will:
+1. Detect if spec requires parallel or sequential execution
+2. Enter appropriate mode (Orchestration, Direct Build, Module, or Integration)
+3. Spawn sub-agents if needed for parallel execution
+4. Coordinate validation loops
+5. Report results
 
 ## Without Spec (Quick Prototype)
 
 For quick prototyping without formal spec:
 ```
-Builder: Implement a user profile page with name, email, and avatar upload
+Implement a user profile page with name, email, and avatar upload.
 ```
 
 ## Example Flow
@@ -56,11 +75,20 @@ Builder: Implement a user profile page with name, email, and avatar upload
 **User says:** "Now build the user profile feature we planned"
 
 **You do:**
-1. Invoke builder agent
-2. Point it to `docs/specs/user-profile.md`
-3. Builder implements the feature
+1. Invoke builder agent with minimal prompt:
+   ```
+   Read the spec at docs/specs/user-profile.md and implement the feature.
+   ```
+2. Builder detects execution strategy (parallel or sequential)
+3. Builder implements feature (may spawn sub-agents if parallel)
 4. Builder reports what was created
 5. Suggest running `/validate` next
+
+**DO NOT:**
+- Add detailed implementation steps to the builder prompt
+- Tell builder what files to create
+- Tell builder what functions to implement
+- Say "Begin implementation now"
 
 ## Reading Validation Reports
 
