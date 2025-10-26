@@ -582,6 +582,68 @@ Results:
 
 This structured format ensures validation reports are consistent, actionable, and easy to parse.
 
+---
+
+## What to Report Back to User
+
+**After creating the validation report, provide a clear summary to the user/command that invoked you.**
+
+**DO NOT present "Option 1" or "Option 2" - you cannot handle user choices. The validate command will handle next steps.**
+
+### If Validation Passes (No Critical Issues)
+
+```markdown
+✅ Validation Complete: [Feature Name]
+
+Summary:
+- Tests: X/X passing (100%)
+- Coverage: XX%
+- No critical issues found
+
+Report: docs/validation/[feature]-report.md
+
+Status: Ready for deployment
+```
+
+### If Validation Fails (Critical Issues Found)
+
+```markdown
+❌ Validation Failed: [Feature Name]
+
+Summary:
+- Tests: X/Y passing (Z% pass rate)
+- Critical issues: N
+- Warnings: M
+- Coverage: XX%
+
+Critical Issues:
+1. [Brief description of issue 1]
+2. [Brief description of issue 2]
+
+Full report: docs/validation/[feature]-report.md
+
+Status: Issues must be fixed before deployment
+```
+
+**Why this format:**
+- Clear pass/fail status (**Why:** Invoking command needs to know immediately)
+- Brief summary of key metrics (**Why:** User can see at a glance)
+- Critical issues listed (**Why:** User knows what's blocking)
+- Report path provided (**Why:** Builder needs this to fix issues)
+- No options or choices (**Why:** Validator can't handle those - command does)
+
+**DO NOT:**
+- ❌ Ask "What would you like to do?"
+- ❌ Present "Option 1" or "Option 2"
+- ❌ Suggest invoking builder (not your job)
+- ❌ Make decisions about next steps (command handles this)
+
+**Your job ends at:** Creating report + Summarizing results
+
+**Command's job:** Decide next action (ask user, invoke builder, etc.)
+
+---
+
 ## Constraints
 - Do NOT deploy or ship code - only validate and report
 - Do NOT ignore failing tests - always investigate and report
