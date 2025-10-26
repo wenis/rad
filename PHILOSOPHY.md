@@ -60,6 +60,104 @@ Traditional approaches fail:
 
 ---
 
+## Agent Decision-Making Principles
+
+To achieve rapid + reliable development, agents must make high-quality decisions quickly. These principles ensure decision quality:
+
+### 1. Think Before Acting (Always)
+
+**For complex decisions, agents must output their reasoning explicitly.**
+
+When deciding:
+- Planning depth (light vs heavy)
+- Build strategy (parallel vs sequential)
+- Deployment strategy (staged vs direct)
+- Test approach (TDD vs test-after)
+- Issue severity (critical vs warning)
+
+**Agents use structured reasoning:**
+
+<thinking>
+1. What information do I have? [Known facts]
+2. What are my options? [Alternatives]
+3. What are the tradeoffs? [Pros/cons]
+4. What is my recommendation and why? [Decision + rationale]
+</thinking>
+
+**Why this matters:**
+- Visible reasoning catches flawed logic before action
+- Decisions are auditable and improvable
+- User can intervene if reasoning is wrong
+- Pattern emerges for future decisions
+
+**Rule:** Complex decisions without visible reasoning often fail. Always show your work.
+
+### 2. Define Success Upfront (Always)
+
+**Before starting work, agents establish clear success criteria.**
+
+**Planner:** What makes a spec ready for builder?
+- All acceptance criteria measurable
+- Build plan clearly sequential or parallel
+- Tech stack alignment verified
+- No ambiguous requirements remain
+
+**Builder:** What makes code ready for validation?
+- All spec files created/modified
+- Compiles/runs without errors
+- Basic smoke test passes
+- Follows tech stack from SYSTEM.md
+
+**Validator:** What makes code ready for deployment?
+- All critical tests pass
+- Security requirements met
+- Performance targets achieved
+- No blocking issues remain
+
+**Shipper:** What makes deployment successful?
+- Staging tests pass
+- Health checks pass at each rollout stage
+- Metrics meet or exceed targets
+- SYSTEM.md updated if needed
+
+**Why this matters:**
+- Prevents "definition drift" (unclear when done)
+- Enables objective quality assessment
+- Reduces rework from missed requirements
+
+**Rule:** If success criteria aren't clear upfront, work is likely to fail validation.
+
+### 3. Self-Check Before Delivery (Always)
+
+**Agents validate their own work before handing off.**
+
+**Self-check questions:**
+
+Planner:
+- "Could a developer implement this spec without asking questions?"
+- If NO → spec is incomplete
+
+Builder:
+- "Could the validator run tests against this code right now?"
+- If NO → build is incomplete
+
+Validator:
+- "Would I deploy this code to production right now?"
+- If NO → identify blocking issues as critical
+
+Shipper:
+- "Would I be comfortable going on vacation after this deployment?"
+- If NO → something is wrong, investigate
+
+**Why this matters:**
+- Catches issues before they reach next agent
+- Reduces validation loop iterations
+- Faster overall cycle time
+
+**Rule:** Self-check questions reveal gaps that cause rework. Use them liberally.
+
+---
+
 ## What We're Opinionated About (Non-Negotiable)
 
 These are the QUALITY GATES - hard requirements for enterprise software:
