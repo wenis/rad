@@ -24,6 +24,9 @@ Thumbs.db
 *.log
 *.cache
 
+# Local Settings (user-specific)
+settings.local.json
+
 # Don't ignore .claude directory (this IS the RAD system)
 !.claude/
 
