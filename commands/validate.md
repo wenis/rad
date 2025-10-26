@@ -1,20 +1,22 @@
 ---
 name: validate
-description: Invoke the validator agent to test and verify code quality
+description: Manages the builder-validator feedback loop with automatic iteration tracking. Tests code quality, coordinates fixes, and ensures max 3 iterations before user escalation.
 ---
 
 # Validate Code
 
-Invoke the validator agent to thoroughly test code and check quality.
+Manage the builder-validator feedback loop to test code quality and coordinate fixes automatically.
+
+**Why this command exists:** Quality gates prevent bugs from reaching production, but manual back-and-forth between validation and fixing is slow and error-prone. This command automates the feedback loop: validator finds issues → user chooses action → builder fixes → validator retests → repeat max 3 times. This ensures consistent quality while maintaining rapid iteration speed.
 
 ## Usage
 
 Use this command when you want to:
-- Run comprehensive tests on new code
-- Check test coverage
-- Verify acceptance criteria are met
-- Find security issues or bugs
-- Get validation report before deployment
+- Run comprehensive tests on new code (**Why:** Catch bugs before they reach production)
+- Check test coverage (**Why:** Untested code is likely to have hidden bugs)
+- Verify acceptance criteria are met (**Why:** Ensures feature matches spec requirements)
+- Find security issues or bugs (**Why:** Security vulnerabilities must be caught before deployment)
+- Get validation report before deployment (**Why:** Quality gate ensures production readiness)
 
 ## What This Does
 
@@ -32,6 +34,8 @@ The validator agent will:
 
 ### Step 1: Invoke Validator
 
+**Why this step:** Validator agent has the tools and expertise to generate comprehensive tests, run them, and create detailed reports. This step initiates the quality check process.
+
 Invoke the **validator** agent with:
 - Feature/component to validate
 - Path to spec (if available)
@@ -45,22 +49,30 @@ The validator will report back with:
 
 ### Step 2: Check Validation Results
 
+**Why this step:** You need to determine if fixes are required before proceeding. Reading the report yourself (rather than blindly trusting the validator's summary) ensures you understand the issue severity and can make informed decisions about next steps.
+
 After validator completes, read the validation report to determine next action:
 
 **If all tests pass and no critical issues:**
 - ✅ Report success to user
 - ✅ Suggest next step: `/ship` for deployment OR mark feature complete
+- **Why:** No blockers exist; code meets quality gates
 
 **If critical issues or failing tests found:**
 - ❌ Note the issues
 - ❌ Track iteration number (1, 2, or 3)
 - ❌ Proceed to Step 3 (Feedback Loop)
+- **Why:** Critical issues block deployment; must be fixed before proceeding
 
 ### Step 3: Automatic Feedback Loop (Max 3 Iterations)
+
+**Why this step:** Automated loops reduce friction and ensure consistent process. Max 3 iterations prevents infinite loops when fundamental architectural problems exist.
 
 **When validation fails, automatically handle the feedback loop:**
 
 1. **Ask user if they want to fix issues:**
+
+   **Why ask:** User may want manual control (to learn), may accept current state (known issues acceptable), or may want automated fix (most common). Asking preserves user agency.
 
    Use AskUserQuestion with options:
    - "Fix issues now (invoke builder)" - Most common choice
@@ -69,6 +81,8 @@ After validator completes, read the validation report to determine next action:
 
 2. **If user chooses "Fix issues now":**
 
+   **Why invoke builder:** Builder agent specializes in code fixes and can read validation reports to make targeted changes. This is faster and more reliable than manual fixes for most issues.
+
    Invoke builder agent with validation report:
    ```
    Read validation report at docs/validation/[feature]-report.md and fix all issues.
@@ -76,15 +90,21 @@ After validator completes, read the validation report to determine next action:
 
 3. **After builder completes fixes:**
 
+   **Why auto re-validate:** Immediate re-testing provides fast feedback on whether fixes worked. Waiting would slow iteration cycles and risk forgetting context.
+
    Automatically re-invoke validator (same scope as before)
 
 4. **Track iterations:**
+
+   **Why track:** Prevents infinite loops and signals when architectural changes are needed rather than tactical fixes.
 
    - Iteration 1: First validation failure → Fix → Re-validate
    - Iteration 2: Still failing → Fix again → Re-validate
    - Iteration 3: Still failing → Report to user for guidance
 
 5. **After iteration 3 with failures:**
+
+   **Why stop at 3:** If 3 fix attempts failed, the problem is likely architectural (wrong approach) or requirements are unclear. Continuing wastes time; better to escalate for human judgment.
 
    Stop the loop and report:
    ```
@@ -177,6 +197,105 @@ This suggests fundamental architectural problems. Options:
 - Continue fixing manually with user guidance
 - Accept current state and document known limitations"
 ```
+
+**Scenario: User chooses "Fix manually"**
+
+```
+User: "Validate the data import feature"
+
+You: [Invoke validator]
+Validator: ❌ 2 failing tests - CSV parsing errors
+You: [Use AskUserQuestion]
+     "Validation found 2 critical issues. How should we proceed?"
+     [Fix now] [Fix manually] [Skip]
+
+User: [Selects "Fix manually" - wants to learn]
+
+You: "The validation report is at docs/validation/data-import-report.md
+
+      Issues to fix:
+      1. CSV parser fails on empty fields (line 45 in parser.py)
+      2. Date format validation too strict (line 78 in parser.py)
+
+      After fixing, run `/validate` again to verify."
+
+[User edits code manually]
+
+User: "/validate data import"
+
+You: [Re-invoke validator]
+Validator: ✅ All tests passing
+You: "✅ Issues fixed! Validation passed."
+```
+
+**Scenario: Partial success (some issues fixed, some remain)**
+
+```
+Iteration 1:
+Validator: ❌ 5 failing tests
+Builder: Fixed 3 issues
+Validator: ❌ 2 tests still failing + 1 new issue from fix
+
+You: "Iteration 1 made progress: 3/5 issues fixed, but 2 remain + 1 new issue introduced.
+
+Still failing:
+- Memory leak in connection pooling (original issue)
+- Invalid error handling (original issue)
+- Missing null check (new - introduced by fix)
+
+[Ask user] → User chooses 'Fix now'"
+
+Iteration 2:
+Builder: Fixed all 3 remaining issues
+Validator: ✅ All tests passing
+You: "✅ All issues resolved after 2 iterations!"
+```
+
+## Output Format Guidance
+
+**When reporting validation results to user, use consistent format:**
+
+**For successful validation:**
+```
+✅ Validation Complete: [Feature Name]
+
+Summary:
+- Tests: X/X passing (100%)
+- Coverage: XX%
+- No critical issues found
+
+Status: Ready for deployment
+```
+
+**For failed validation (after asking user):**
+```
+❌ Validation Failed: [Feature Name]
+
+Summary:
+- Tests: X/Y passing (Z%)
+- Critical issues: N
+
+Iteration X of 3: [Invoking builder to fix issues...]
+OR
+User chose to fix manually. Report: docs/validation/[feature]-report.md
+```
+
+**For iteration completion:**
+```
+✅ All issues resolved after N iteration(s)!
+
+Final results:
+- Tests: X/X passing (100%)
+- Coverage: XX%
+
+Status: Ready for `/ship`
+```
+
+**Why consistent format:**
+- Users can quickly scan status (✅ or ❌)
+- Iteration tracking visible at a glance
+- Clear next steps provided
+- Standardized across all validations
 
 ## Key Principles
 
