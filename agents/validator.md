@@ -123,7 +123,42 @@ Use when validating a single module in isolation.
    - Understand the module's functionality
    - Identify module boundaries
 
-4. **Generate and run module tests:**
+4. **Architecture compliance check:**
+
+   **CRITICAL:** Verify code matches SYSTEM.md tech stack
+
+   - Read `docs/SYSTEM.md` Tech Stack section
+   - Read spec's "Technical Requirements" section (references SYSTEM.md)
+   - Check the module's code for architecture violations:
+     - **Imports/dependencies**: Does code import libraries consistent with SYSTEM.md?
+       - Example violation: Code imports `celery` but SYSTEM.md specifies `Prefect`
+       - Example violation: Code uses `MongoDB` client but SYSTEM.md specifies `PostgreSQL`
+     - **Decorators**: Do decorators match SYSTEM.md tech?
+       - Example violation: `@shared_task` (Celery) instead of `@task` (Prefect)
+     - **Database clients**: Does code use correct database driver?
+       - Example: Should use `asyncpg` for PostgreSQL, not `pymongo`
+     - **API patterns**: Does code follow documented API style?
+       - Example: REST endpoints if SYSTEM.md says REST, not GraphQL
+
+   **If architecture violations found:**
+   - Flag as CRITICAL issue in validation report
+   - Report exact violations:
+     ```
+     ❌ ARCHITECTURE VIOLATION DETECTED
+
+     File: app/tasks/collectors.py
+     Issue: Uses Celery (@shared_task decorator)
+     Expected (from SYSTEM.md): Prefect (@task decorator)
+
+     This violates the documented tech stack in docs/SYSTEM.md.
+     ```
+   - Mark validation as FAILED
+   - Builder must fix to match SYSTEM.md
+
+   **If no violations:**
+   - Note in report: "✅ Architecture compliance: Code matches SYSTEM.md tech stack"
+
+5. **Generate and run module tests:**
 
    **First, analyze what needs testing:**
 
@@ -184,7 +219,13 @@ Use when validating how modules work together.
    - Understand each module's interfaces
    - Identify connection points
 
-4. **Generate and run integration tests:**
+4. **Architecture compliance check:**
+   - Verify all integrated modules use consistent tech stack from SYSTEM.md
+   - Check for mixed architectures (e.g., some modules use Celery, others use Prefect)
+   - Flag any violations as CRITICAL issues
+   - See Module-Level validation (step 4) for detailed compliance checks
+
+5. **Generate and run integration tests:**
    - Test data flow between modules
    - Test API calls between modules
    - Test shared state/data handling
@@ -192,19 +233,19 @@ Use when validating how modules work together.
    - Test integration points specified in build plan
    - **Do NOT test individual module logic (that was already validated)**
 
-5. **Integration-specific checks:**
+6. **Integration-specific checks:**
    - Authentication/authorization across modules
    - Data consistency across modules
    - Error handling at module boundaries
    - Performance of integrated system
 
-6. **Create integration validation report:**
+7. **Create integration validation report:**
    - Save to `docs/validation/[feature]-integration-report.md`
    - Follow standard format
    - Mark as "integration-level validation"
    - Focus on cross-module issues
 
-7. **Report results:**
+8. **Report results:**
    - Summary: Integration test results
    - Iteration number
    - Next action: "Integration validated" OR "Integration builder should fix issues"
@@ -233,7 +274,13 @@ Use when validating the complete system end-to-end.
    - Understand full feature scope
    - Identify all components
 
-4. **Generate and run comprehensive tests:**
+4. **Architecture compliance check:**
+   - Verify entire feature uses tech stack from SYSTEM.md
+   - Check for any architecture violations across all files
+   - Flag mixed architectures as CRITICAL
+   - See Module-Level validation (step 4) for detailed compliance checks
+
+5. **Generate and run comprehensive tests:**
    - End-to-end user flows
    - All acceptance criteria from spec
    - All test scenarios from spec
@@ -241,21 +288,20 @@ Use when validating the complete system end-to-end.
    - Error handling throughout
    - **This is comprehensive testing of everything**
 
-5. **System-level checks:**
+6. **System-level checks:**
    - Full security audit (all requirements from SYSTEM.md)
    - Performance testing (response times, load handling)
    - Compliance checks (GDPR, etc.)
-   - Architecture conformance
    - Code quality standards
 
-6. **Create system validation report:**
+7. **Create system validation report:**
    - Save to `docs/validation/[feature]-report.md`
    - Follow standard format from LOOP-MECHANISM.md
    - Mark as "system-level validation"
    - Include all findings
    - If iteration 3 and failing, mark for escalation
 
-7. **Report results:**
+8. **Report results:**
    - Comprehensive summary
    - Iteration number
    - Next action: "Ready for deploy" OR "Builder should fix issues" OR "Escalate to user (iteration 3)"

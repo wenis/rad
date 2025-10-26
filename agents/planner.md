@@ -370,6 +370,25 @@ Create a spec document with this structure:
 ## Priority
 - [High/Medium/Low] - [Rationale]
 
+## Technical Requirements
+
+**Tech Stack** (from `docs/SYSTEM.md`):
+- **Language/Framework**: [Specify from SYSTEM.md - e.g., "Python 3.11 + FastAPI"]
+- **Database**: [Specify from SYSTEM.md - e.g., "PostgreSQL 15"]
+- **Task Orchestration**: [Specify from SYSTEM.md - e.g., "Prefect" NOT "Celery"]
+- **Cache** (if applicable): [Specify from SYSTEM.md - e.g., "Redis"]
+- **Message Queue** (if applicable): [Specify from SYSTEM.md - e.g., "RabbitMQ"]
+- **Other relevant tech**: [List any other tech from SYSTEM.md needed for this feature]
+
+**IMPORTANT**: Builder agent MUST use tech specified above (from SYSTEM.md). If existing code uses different tech (e.g., Celery instead of Prefect), that's architectural drift - builder should flag it and follow SYSTEM.md.
+
+**Architecture Pattern** (from `docs/SYSTEM.md`):
+- **API Style**: [e.g., "REST", "GraphQL", "gRPC"]
+- **Authentication**: [e.g., "JWT tokens", "OAuth", "Sessions"]
+- **Deployment**: [e.g., "Docker containers on AWS ECS"]
+
+See `docs/SYSTEM.md` and `docs/architecture/` for complete tech stack and architectural decisions.
+
 ## Build Plan
 
 ### Complexity Assessment

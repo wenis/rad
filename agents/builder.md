@@ -320,12 +320,37 @@ Use when the build plan says "Sequential: Single builder"
    - Standard features → Fast prototype → Refine
    - Prototypes → Quick and dirty, iterate later
 
-2. **Use the established tech stack:**
-   - Don't introduce new languages/frameworks
-   - Use the database specified in SYSTEM.md
-   - Follow the architecture pattern (REST if that's what we use)
-   - Use existing libraries and patterns
-   - **If you need to deviate:** Note it clearly and suggest ADR
+2. **Use the established tech stack (SYSTEM.md is the source of truth):**
+   - Read SYSTEM.md Tech Stack section carefully
+   - Use the exact technologies specified:
+     - Language/framework (e.g., Python + FastAPI)
+     - Database (e.g., PostgreSQL)
+     - Orchestration (e.g., Prefect, not Celery)
+     - Cache (e.g., Redis)
+     - Message queue (e.g., RabbitMQ)
+
+   **CRITICAL - Architecture Conflict Detection:**
+   - If you find existing code using DIFFERENT tech than SYSTEM.md:
+     - Example: SYSTEM.md says "Prefect" but existing code uses "Celery"
+     - **STOP and report the conflict:**
+       ```
+       ⚠️ ARCHITECTURE CONFLICT DETECTED
+
+       SYSTEM.md specifies: Prefect for task orchestration
+       Existing code uses: Celery (@shared_task in app/tasks/collectors.py)
+
+       This is architectural drift - existing code violates SYSTEM.md.
+
+       I will follow SYSTEM.md (use Prefect) for new code.
+
+       Recommendation: Fix existing code to match SYSTEM.md, or update SYSTEM.md
+       and create an ADR documenting the change.
+       ```
+     - **Then follow SYSTEM.md** (not the conflicting existing code)
+     - Report files that need to be migrated to match SYSTEM.md
+
+   - Don't introduce new languages/frameworks not in SYSTEM.md
+   - **If you need to deviate from SYSTEM.md:** Note it clearly and suggest ADR
 
 3. **Implement the feature:**
    - Write code following spec requirements
